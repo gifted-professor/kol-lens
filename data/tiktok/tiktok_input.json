@@ -1,0 +1,12 @@
+{
+  "profiles": [
+    "_lilheat_"
+  ],
+  "resultsPerPage": 20,
+  "excludePinnedPosts": false,
+  "shouldDownloadVideos": false,
+  "shouldDownloadCovers": false,
+  "shouldDownloadAvatars": false,
+  "shouldDownloadSlideshowImages": false,
+  "shouldDownloadSubtitles": false
+}

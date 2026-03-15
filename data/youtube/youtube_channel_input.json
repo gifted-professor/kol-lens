@@ -1,0 +1,10 @@
+{
+  "startUrls": [
+    { "url": "https://www.youtube.com/@MindyMinx" }
+  ],
+  "maxResults": 5,
+  "maxResultsShorts": 0,
+  "maxResultStreams": 0,
+  "subtitlesLanguage": "en",
+  "subtitlesFormat": "srt"
+}

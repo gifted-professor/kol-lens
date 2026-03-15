@@ -1,0 +1,26 @@
+{
+  "maxResults": 10,
+  "maxResultsShorts": 0,
+  "maxResultStreams": 0,
+  "subtitlesLanguage": "en",
+  "subtitlesFormat": "srt",
+  "downloadSubtitles": false,
+  "hasCC": false,
+  "startUrls": [
+    {
+      "url": "https://www.youtube.com/@ggmfam/featured"
+    },
+    {
+      "url": "https://www.youtube.com/@LillianChiu101/videos"
+    },
+    {
+      "url": "https://www.youtube.com/@alyssaahoward/videos"
+    },
+    {
+      "url": "https://www.youtube.com/@MayaGraves/videos"
+    },
+    {
+      "url": "https://www.youtube.com/@plainvanillabeanasmr/videos"
+    }
+  ]
+}

@@ -1,0 +1,1293 @@
+Started: 2026-03-14 at 11:34:24
+Container URL: https://abf5p2d727sa.runs.apify.net
+Build: 0.0.237 (latest) | Actor version: 0.0 (latest)
+Timeout: 604,800 seconds
+Memory: 1024 MB
+View on Apify Console: https://console.apify.com/actors/h7sDV53CddomktSi5/runs/1nSNiiLzvBiHl11pg
+
+
+
+Export results: https://console.apify.com/storage/datasets/T5kDKgifDvH7sqxVo
+View on Apify Console: https://console.apify.com/actors/h7sDV53CddomktSi5/runs/1nSNiiLzvBiHl11pg
+[{
+  "title": "Q&A | Why My Husband Works, Romance Faded, Marriage Advice, Babies & Skinny Dipping",
+  "translatedTitle": null,
+  "type": "video",
+  "id": "dSHO6ChJ5B0",
+  "url": "https://www.youtube.com/watch?v=dSHO6ChJ5B0",
+  "thumbnailUrl": "https://i.ytimg.com/vi/dSHO6ChJ5B0/maxresdefault.jpg",
+  "viewCount": 22536,
+  "date": "2026-03-03T14:01:03.000Z",
+  "likes": 1200,
+  "location": null,
+  "channelName": "Mindy Minx",
+  "channelUrl": "https://www.youtube.com/channel/UCCDXU_43IIkFb7qJcJei5cw",
+  "channelUsername": "MindyMinx",
+  "collaborators": null,
+  "channelId": "UCCDXU_43IIkFb7qJcJei5cw",
+  "channelDescription": "Hi! I’m Mindy✨ wife, mama, and lover of all things cozy. I’m in a loving age gap marriage with my husband Larry, and together we’ve built a beautiful life with our two children, thanks to the miracle of IVF.\n\nHere on my channel, you’ll find the gentle rhythm of our everyday life, from warm moments at home and seasonal decorating to travel vlogs, Disney and Universal days, and little snippets of motherhood.\n\nExpect cozy chats over coffee, Fall and Christmas magic, simple joys, and a whole lot of heart. If you love a slower pace and finding beauty in the ordinary, you’re in the right place. 💛 Xoxo",
+  "channelJoinedDate": "Mar 26, 2015",
+  "channelDescriptionLinks": [
+    {
+      "text": "Instagram",
+      "url": "https://www.instagram.com/minxmindy/"
+    },
+    {
+      "text": "Email",
+      "url": "mindyminx@outloudtalent.com"
+    }
+  ],
+  "channelLocation": "United States",
+  "channelAvatarUrl": "https://yt3.googleusercontent.com/4zJ_rSuN04KqrdQARKNnaIcQnFC1nVoEwY1fC7NcBXaHoQQ4X5Yq1fGsHV-Fz9HA3vrUCIXz=s160-c-k-c0x00ffffff-no-rj",
+  "channelBannerUrl": "https://yt3.googleusercontent.com/wpOH2mEiRCJwDo3iBP98q8DnNdE4Minu_Qhn3zX9gNaeB_o44QMuWIxpVTiEwTMDlaioVlnS=w2560-fcrop64=1,00005a57ffffa5a8-k-c0xffffffff-no-nd-rj",
+  "channelTotalVideos": 1250,
+  "channelTotalViews": 48944340,
+  "numberOfSubscribers": 278000,
+  "isChannelVerified": true,
+  "inputChannelUrl": "https://www.youtube.com/@MindyMinx",
+  "isAgeRestricted": false,
+  "aboutChannelInfo": {
+    "channelDescription": "Hi! I’m Mindy✨ wife, mama, and lover of all things cozy. I’m in a loving age gap marriage with my husband Larry, and together we’ve built a beautiful life with our two children, thanks to the miracle of IVF.\n\nHere on my channel, you’ll find the gentle rhythm of our everyday life, from warm moments at home and seasonal decorating to travel vlogs, Disney and Universal days, and little snippets of motherhood.\n\nExpect cozy chats over coffee, Fall and Christmas magic, simple joys, and a whole lot of heart. If you love a slower pace and finding beauty in the ordinary, you’re in the right place. 💛 Xoxo",
+    "channelJoinedDate": "Mar 26, 2015",
+    "channelDescriptionLinks": [
+      {
+        "text": "Instagram",
+        "url": "https://www.instagram.com/minxmindy/"
+      },
+      {
+        "text": "Email",
+        "url": "mindyminx@outloudtalent.com"
+      }
+    ],
+    "channelLocation": "United States",
+    "channelUsername": "MindyMinx",
+    "channelAvatarUrl": "https://yt3.googleusercontent.com/4zJ_rSuN04KqrdQARKNnaIcQnFC1nVoEwY1fC7NcBXaHoQQ4X5Yq1fGsHV-Fz9HA3vrUCIXz=s160-c-k-c0x00ffffff-no-rj",
+    "channelBannerUrl": "https://yt3.googleusercontent.com/wpOH2mEiRCJwDo3iBP98q8DnNdE4Minu_Qhn3zX9gNaeB_o44QMuWIxpVTiEwTMDlaioVlnS=w2560-fcrop64=1,00005a57ffffa5a8-k-c0xffffffff-no-nd-rj",
+    "channelTotalVideos": 1250,
+    "channelTotalViews": 48944340,
+    "numberOfSubscribers": 278000,
+    "isChannelVerified": true,
+    "channelName": "Mindy Minx",
+    "channelUrl": "https://www.youtube.com/channel/UCCDXU_43IIkFb7qJcJei5cw",
+    "channelId": "UCCDXU_43IIkFb7qJcJei5cw",
+    "inputChannelUrl": "https://www.youtube.com/@MindyMinx",
+    "isAgeRestricted": false
+  },
+  "duration": "00:22:04",
+  "commentsCount": 306,
+  "text": "Q&A | Why My Husband Works, Romance Faded, Marriage Advice, Babies & Skinny Dipping\nMENTIONED:\n⭐️ Maybelline Warm Me Up Lip: https://rstyle.me/+ZQPEOreilaCQ709LXj...\n⭐️ NYX Brow Mascara: https://rstyle.me/+hh4GKmjMuUy9T2yNMF...\n⭐️ Bigelow Mentha Lip Tint: https://rstyle.me/+tvrUsHA67cp-rSXklX...\n⭐️ NYX Glitter Glue: https://rstyle.me/+TYOqIbLwTvKbNkncm2...\n⭐️ Maybelline Concealer: https://rstyle.me/+8c6MpjIkTMZ0erx5qV...\n⭐️ Kosas Concealer: https://rstyle.me/+E4jQWtYfgoqqR3ZUs1...\n⭐️ Tarte Radiant Concealer: https://rstyle.me/+QUZq6tC8t9myP_ux-0...\n⭐️ Alastin Skin Tint: https://rstyle.me/+kzHJGnP-kcQ6H-ikLS...\n⭐️ It Cosmetics Nude Glow: https://rstyle.me/+wmi6Hik0Sk94OgiwDf...\n⭐️ Mac Powder Foundation: https://rstyle.me/+oPxZ9LC3OoOmZggZ7s...\n⭐️ Ello Glass Cup: https://rstyle.me/+v-XrFb9w2wsV5vdNAX...\n⭐️ La Roche Posey Sunscreen: https://rstyle.me/+7kMJ_O_qzbbnWdz43M...\n⭐️ Joggers: https://rstyle.me/+HwFl1y7mOfgjjwFBI3...\n✨ SlumberPod Travel Bed: https://rstyle.me/+HxGQYjY54fJYxEmChJ...\n⭐️ Pixi Depute Eye Patches: https://rstyle.me/+7ylkJ6VNTY6OdDCTUp...\n⭐️ Real Techniques Brush: https://rstyle.me/+m1Md57kAKbUbANUmHj...\n⭐️ CRZ Yoga Leggings: https://rstyle.me/+Jvj5uT6dTadI3GbOOP...\n⭐️ CRZ Yoga Tops: https://rstyle.me/+_Hlh48tBSaNam6atdg...\n⭐️ Crossbody Bag: https://rstyle.me/+1Am04A5VPSs-6heNOB...\n⭐️ VS Modern Brief: https://rstyle.me/+qjPBujHR6KMSgJby3C...\n⭐️Elf Glow Revivor Oil: https://rstyle.me/+t3bK9VTjKUE5EcC7Ze...\n⭐️ Elf Vit. C Serum: https://rstyle.me/+C9PAqVgpUTYTyNAmH3...\n⭐️ Milani Baked Blush: https://rstyle.me/+mgx7myV2XknXb9Wx7f...\n⭐️ EOS Moisturizer Vanilla: https://rstyle.me/+1uqIr13bIvVU-wAZml...\n⭐️ Nizoral Anti Dandruff: https://rstyle.me/+aeaKrxopPZq6IrVn6U...\n⭐️ Living Proof Dry Shampoo: https://rstyle.me/+xPU6MqEtCSTv0kpe2Y...\n⭐️ Drunk Elephant Jelly Cleanser: https://rstyle.me/+Z8YQU3J6gwmcunejEy...\n⭐️ La Roche Posey Moisturizer: https://rstyle.me/+E1lD4AQfYlq_fD0EtO...\n⭐️ Pixie Brow Tamer: https://rstyle.me/+lScmjDI_0muta21kAq...\n⭐️ Reminders of Him: https://rstyle.me/+MAHAq6T0Hw4ienNPMA...\n⭐️ Leather Multitool Holder: https://rstyle.me/+glcKB_OZ-JhzFvWo5_...\n⭐️ Bridgerton Sweatshirt: https://rstyle.me/+JmBh1eBL15cmaT4UAM...\n⭐️ Immune Bee Support: https://rstyle.me/+L4jHMfOxup78ccLz7-...\n⭐️ Hokas Sneakers: https://rstyle.me/+iBuk9WIIvtkjOP48Pv...\n⭐️ Candle Warmer (similar): https://rstyle.me/+sHOeZAjnfkzenTq2Ax...\n⭐️ LMNT Hydration Variety Pack: https://rstyle.me/+K_wrU6sv9ADWpt-yD5...\n⭐️ Sony ZV-1: https://amzn.to/3EgtKkL\n⭐️ My Keurig: https://rstyle.me/+t4ezf9hAe2HehanJ_C...\n📚 My August Book Pick: https://rstyle.me/+g17iXz0NHAfl4wL-ye...\n\n✨ Instagram @minxmindy\n✨ Subscribe here:    / @mindyminx   🕯️ Cozy videos every Tuesday, Thursday & Saturday at 9am EST!\n\nMINDY MINX STORE: https://www.bonfire.com/store/mindy-m...\n⭐️ Never Give Up Sweatshirt: https://www.bonfire.com/nevergiveupminx/\n⭐️ Never Give Up Bracelet: https://analuisa.pxf.io/c/1421990/276...\n#dayinthelife #lifestyle #dailyvlog",
+  "translatedText": null,
+  "descriptionLinks": [
+    {
+      "url": "https://rstyle.me/+ZQPEOreilaCQ709LXjGIzg",
+      "text": "https://rstyle.me/+ZQPEOreilaCQ709LXj..."
+    },
+    {
+      "url": "https://rstyle.me/+hh4GKmjMuUy9T2yNMFq0sw",
+      "text": "https://rstyle.me/+hh4GKmjMuUy9T2yNMF..."
+    },
+    {
+      "url": "https://rstyle.me/+tvrUsHA67cp-rSXklXkU3Q",
+      "text": "https://rstyle.me/+tvrUsHA67cp-rSXklX..."
+    },
+    {
+      "url": "https://rstyle.me/+TYOqIbLwTvKbNkncm2OTRg",
+      "text": "https://rstyle.me/+TYOqIbLwTvKbNkncm2..."
+    },
+    {
+      "url": "https://rstyle.me/+8c6MpjIkTMZ0erx5qVxi4g",
+      "text": "https://rstyle.me/+8c6MpjIkTMZ0erx5qV..."
+    },
+    {
+      "url": "https://rstyle.me/+E4jQWtYfgoqqR3ZUs1MNHg",
+      "text": "https://rstyle.me/+E4jQWtYfgoqqR3ZUs1..."
+    },
+    {
+      "url": "https://rstyle.me/+QUZq6tC8t9myP_ux-0sD0Q",
+      "text": "https://rstyle.me/+QUZq6tC8t9myP_ux-0..."
+    },
+    {
+      "url": "https://rstyle.me/+kzHJGnP-kcQ6H-ikLSHikw",
+      "text": "https://rstyle.me/+kzHJGnP-kcQ6H-ikLS..."
+    },
+    {
+      "url": "https://rstyle.me/+wmi6Hik0Sk94OgiwDfHO9g",
+      "text": "https://rstyle.me/+wmi6Hik0Sk94OgiwDf..."
+    },
+    {
+      "url": "https://rstyle.me/+oPxZ9LC3OoOmZggZ7so6fQ",
+      "text": "https://rstyle.me/+oPxZ9LC3OoOmZggZ7s..."
+    },
+    {
+      "url": "https://rstyle.me/+v-XrFb9w2wsV5vdNAX21lw",
+      "text": "https://rstyle.me/+v-XrFb9w2wsV5vdNAX..."
+    },
+    {
+      "url": "https://rstyle.me/+7kMJ_O_qzbbnWdz43M6M3Q",
+      "text": "https://rstyle.me/+7kMJ_O_qzbbnWdz43M..."
+    },
+    {
+      "url": "https://rstyle.me/+HwFl1y7mOfgjjwFBI3M2jQ",
+      "text": "https://rstyle.me/+HwFl1y7mOfgjjwFBI3..."
+    },
+    {
+      "url": "https://rstyle.me/+HxGQYjY54fJYxEmChJx4bg",
+      "text": "https://rstyle.me/+HxGQYjY54fJYxEmChJ..."
+    },
+    {
+      "url": "https://rstyle.me/+7ylkJ6VNTY6OdDCTUpKOqQ",
+      "text": "https://rstyle.me/+7ylkJ6VNTY6OdDCTUp..."
+    },
+    {
+      "url": "https://rstyle.me/+m1Md57kAKbUbANUmHjt07A",
+      "text": "https://rstyle.me/+m1Md57kAKbUbANUmHj..."
+    },
+    {
+      "url": "https://rstyle.me/+Jvj5uT6dTadI3GbOOPtLUA",
+      "text": "https://rstyle.me/+Jvj5uT6dTadI3GbOOP..."
+    },
+    {
+      "url": "https://rstyle.me/+_Hlh48tBSaNam6atdgrGqQ",
+      "text": "https://rstyle.me/+_Hlh48tBSaNam6atdg..."
+    },
+    {
+      "url": "https://rstyle.me/+1Am04A5VPSs-6heNOB7HtQ",
+      "text": "https://rstyle.me/+1Am04A5VPSs-6heNOB..."
+    },
+    {
+      "url": "https://rstyle.me/+qjPBujHR6KMSgJby3CcSyA",
+      "text": "https://rstyle.me/+qjPBujHR6KMSgJby3C..."
+    },
+    {
+      "url": "https://rstyle.me/+t3bK9VTjKUE5EcC7Ze5k7Q",
+      "text": "https://rstyle.me/+t3bK9VTjKUE5EcC7Ze..."
+    },
+    {
+      "url": "https://rstyle.me/+C9PAqVgpUTYTyNAmH3OSdw",
+      "text": "https://rstyle.me/+C9PAqVgpUTYTyNAmH3..."
+    },
+    {
+      "url": "https://rstyle.me/+mgx7myV2XknXb9Wx7fGZ_w",
+      "text": "https://rstyle.me/+mgx7myV2XknXb9Wx7f..."
+    },
+    {
+      "url": "https://rstyle.me/+1uqIr13bIvVU-wAZmlJ1tQ",
+      "text": "https://rstyle.me/+1uqIr13bIvVU-wAZml..."
+    },
+    {
+      "url": "https://rstyle.me/+aeaKrxopPZq6IrVn6Uao-Q",
+      "text": "https://rstyle.me/+aeaKrxopPZq6IrVn6U..."
+    },
+    {
+      "url": "https://rstyle.me/+xPU6MqEtCSTv0kpe2Ym-NQ",
+      "text": "https://rstyle.me/+xPU6MqEtCSTv0kpe2Y..."
+    },
+    {
+      "url": "https://rstyle.me/+Z8YQU3J6gwmcunejEys5hQ",
+      "text": "https://rstyle.me/+Z8YQU3J6gwmcunejEy..."
+    },
+    {
+      "url": "https://rstyle.me/+E1lD4AQfYlq_fD0EtO_fUQ",
+      "text": "https://rstyle.me/+E1lD4AQfYlq_fD0EtO..."
+    },
+    {
+      "url": "https://rstyle.me/+lScmjDI_0muta21kAqyrIg",
+      "text": "https://rstyle.me/+lScmjDI_0muta21kAq..."
+    },
+    {
+      "url": "https://rstyle.me/+MAHAq6T0Hw4ienNPMA-eqA",
+      "text": "https://rstyle.me/+MAHAq6T0Hw4ienNPMA..."
+    },
+    {
+      "url": "https://rstyle.me/+glcKB_OZ-JhzFvWo5_xVPg",
+      "text": "https://rstyle.me/+glcKB_OZ-JhzFvWo5_..."
+    },
+    {
+      "url": "https://rstyle.me/+JmBh1eBL15cmaT4UAMGxNQ",
+      "text": "https://rstyle.me/+JmBh1eBL15cmaT4UAM..."
+    },
+    {
+      "url": "https://rstyle.me/+L4jHMfOxup78ccLz7-vQIQ",
+      "text": "https://rstyle.me/+L4jHMfOxup78ccLz7-..."
+    },
+    {
+      "url": "https://rstyle.me/+iBuk9WIIvtkjOP48Pvfhug",
+      "text": "https://rstyle.me/+iBuk9WIIvtkjOP48Pv..."
+    },
+    {
+      "url": "https://rstyle.me/+sHOeZAjnfkzenTq2AxKnFQ",
+      "text": "https://rstyle.me/+sHOeZAjnfkzenTq2Ax..."
+    },
+    {
+      "url": "https://rstyle.me/+K_wrU6sv9ADWpt-yD53mIQ",
+      "text": "https://rstyle.me/+K_wrU6sv9ADWpt-yD5..."
+    },
+    {
+      "url": "https://amzn.to/3EgtKkL",
+      "text": "https://amzn.to/3EgtKkL"
+    },
+    {
+      "url": "https://rstyle.me/+t4ezf9hAe2HehanJ_Cwxqg",
+      "text": "https://rstyle.me/+t4ezf9hAe2HehanJ_C..."
+    },
+    {
+      "url": "https://rstyle.me/+g17iXz0NHAfl4wL-yeJ6vw",
+      "text": "https://rstyle.me/+g17iXz0NHAfl4wL-ye..."
+    },
+    {
+      "url": "https://www.youtube.com/channel/UCCDXU_43IIkFb7qJcJei5cw",
+      "text": "   / @mindyminx  "
+    },
+    {
+      "url": "https://www.bonfire.com/store/mindy-minx-store/",
+      "text": "https://www.bonfire.com/store/mindy-m..."
+    },
+    {
+      "url": "https://www.bonfire.com/nevergiveupminx/",
+      "text": "https://www.bonfire.com/nevergiveupminx/"
+    },
+    {
+      "url": "https://analuisa.pxf.io/c/1421990/2760101/17411",
+      "text": "https://analuisa.pxf.io/c/1421990/276..."
+    },
+    {
+      "url": "https://www.youtube.com/hashtag/dayinthelife",
+      "text": "#dayinthelife"
+    },
+    {
+      "url": "https://www.youtube.com/hashtag/lifestyle",
+      "text": "#lifestyle"
+    },
+    {
+      "url": "https://www.youtube.com/hashtag/dailyvlog",
+      "text": "#dailyvlog"
+    }
+  ],
+  "subtitles": null,
+  "order": 1,
+  "commentsTurnedOff": false,
+  "fromYTUrl": "https://www.youtube.com/@MindyMinx/videos",
+  "isMonetized": null,
+  "hashtags": [
+    "#lifestyle",
+    "#dayinthelife",
+    "#dailyvlog"
+  ],
+  "formats": [],
+  "isMembersOnly": false,
+  "input": "https://www.youtube.com/@MindyMinx",
+  "fromChannelListPage": "videos",
+  "isPaidContent": false
+},
+{
+  "title": "I Needed This Reset | Sunday To Do's Mom of Two",
+  "translatedTitle": null,
+  "type": "video",
+  "id": "vzJ0UXosP8w",
+  "url": "https://www.youtube.com/watch?v=vzJ0UXosP8w",
+  "thumbnailUrl": "https://i.ytimg.com/vi/vzJ0UXosP8w/maxresdefault.jpg",
+  "viewCount": 13189,
+  "date": "2026-02-25T00:01:11.000Z",
+  "likes": 808,
+  "location": null,
+  "channelName": "Mindy Minx",
+  "channelUrl": "https://www.youtube.com/channel/UCCDXU_43IIkFb7qJcJei5cw",
+  "channelUsername": "MindyMinx",
+  "collaborators": null,
+  "channelId": "UCCDXU_43IIkFb7qJcJei5cw",
+  "channelDescription": "Hi! I’m Mindy✨ wife, mama, and lover of all things cozy. I’m in a loving age gap marriage with my husband Larry, and together we’ve built a beautiful life with our two children, thanks to the miracle of IVF.\n\nHere on my channel, you’ll find the gentle rhythm of our everyday life, from warm moments at home and seasonal decorating to travel vlogs, Disney and Universal days, and little snippets of motherhood.\n\nExpect cozy chats over coffee, Fall and Christmas magic, simple joys, and a whole lot of heart. If you love a slower pace and finding beauty in the ordinary, you’re in the right place. 💛 Xoxo",
+  "channelJoinedDate": "Mar 26, 2015",
+  "channelDescriptionLinks": [
+    {
+      "text": "Instagram",
+      "url": "https://www.instagram.com/minxmindy/"
+    },
+    {
+      "text": "Email",
+      "url": "mindyminx@outloudtalent.com"
+    }
+  ],
+  "channelLocation": "United States",
+  "channelAvatarUrl": "https://yt3.googleusercontent.com/4zJ_rSuN04KqrdQARKNnaIcQnFC1nVoEwY1fC7NcBXaHoQQ4X5Yq1fGsHV-Fz9HA3vrUCIXz=s160-c-k-c0x00ffffff-no-rj",
+  "channelBannerUrl": "https://yt3.googleusercontent.com/wpOH2mEiRCJwDo3iBP98q8DnNdE4Minu_Qhn3zX9gNaeB_o44QMuWIxpVTiEwTMDlaioVlnS=w2560-fcrop64=1,00005a57ffffa5a8-k-c0xffffffff-no-nd-rj",
+  "channelTotalVideos": 1250,
+  "channelTotalViews": 48944340,
+  "numberOfSubscribers": 278000,
+  "isChannelVerified": true,
+  "inputChannelUrl": "https://www.youtube.com/@MindyMinx",
+  "isAgeRestricted": false,
+  "aboutChannelInfo": {
+    "channelDescription": "Hi! I’m Mindy✨ wife, mama, and lover of all things cozy. I’m in a loving age gap marriage with my husband Larry, and together we’ve built a beautiful life with our two children, thanks to the miracle of IVF.\n\nHere on my channel, you’ll find the gentle rhythm of our everyday life, from warm moments at home and seasonal decorating to travel vlogs, Disney and Universal days, and little snippets of motherhood.\n\nExpect cozy chats over coffee, Fall and Christmas magic, simple joys, and a whole lot of heart. If you love a slower pace and finding beauty in the ordinary, you’re in the right place. 💛 Xoxo",
+    "channelJoinedDate": "Mar 26, 2015",
+    "channelDescriptionLinks": [
+      {
+        "text": "Instagram",
+        "url": "https://www.instagram.com/minxmindy/"
+      },
+      {
+        "text": "Email",
+        "url": "mindyminx@outloudtalent.com"
+      }
+    ],
+    "channelLocation": "United States",
+    "channelUsername": "MindyMinx",
+    "channelAvatarUrl": "https://yt3.googleusercontent.com/4zJ_rSuN04KqrdQARKNnaIcQnFC1nVoEwY1fC7NcBXaHoQQ4X5Yq1fGsHV-Fz9HA3vrUCIXz=s160-c-k-c0x00ffffff-no-rj",
+    "channelBannerUrl": "https://yt3.googleusercontent.com/wpOH2mEiRCJwDo3iBP98q8DnNdE4Minu_Qhn3zX9gNaeB_o44QMuWIxpVTiEwTMDlaioVlnS=w2560-fcrop64=1,00005a57ffffa5a8-k-c0xffffffff-no-nd-rj",
+    "channelTotalVideos": 1250,
+    "channelTotalViews": 48944340,
+    "numberOfSubscribers": 278000,
+    "isChannelVerified": true,
+    "channelName": "Mindy Minx",
+    "channelUrl": "https://www.youtube.com/channel/UCCDXU_43IIkFb7qJcJei5cw",
+    "channelId": "UCCDXU_43IIkFb7qJcJei5cw",
+    "inputChannelUrl": "https://www.youtube.com/@MindyMinx",
+    "isAgeRestricted": false
+  },
+  "duration": "00:24:58",
+  "commentsCount": 184,
+  "text": "I Needed This Reset | Sunday To Do's Mom of Two\nMENTIONED:\n⭐️ Ello Glass Cup: https://rstyle.me/+v-XrFb9w2wsV5vdNAX...\n⭐️ La Roche Posey Sunscreen: https://rstyle.me/+7kMJ_O_qzbbnWdz43M...\n⭐️ Joggers: https://rstyle.me/+HwFl1y7mOfgjjwFBI3...\n✨ SlumberPod Travel Bed: https://rstyle.me/+HxGQYjY54fJYxEmChJ...\n⭐️ Pixi Depute Eye Patches: https://rstyle.me/+7ylkJ6VNTY6OdDCTUp...\n⭐️ Real Techniques Brush: https://rstyle.me/+m1Md57kAKbUbANUmHj...\n⭐️ CRZ Yoga Leggings: https://rstyle.me/+Jvj5uT6dTadI3GbOOP...\n⭐️ CRZ Yoga Tops: https://rstyle.me/+_Hlh48tBSaNam6atdg...\n⭐️ Crossbody Bag: https://rstyle.me/+1Am04A5VPSs-6heNOB...\n⭐️ VS Modern Brief: https://rstyle.me/+qjPBujHR6KMSgJby3C...\n⭐️Elf Glow Revivor Oil: https://rstyle.me/+t3bK9VTjKUE5EcC7Ze...\n⭐️ Elf Vit. C Serum: https://rstyle.me/+C9PAqVgpUTYTyNAmH3...\n⭐️ Milani Baked Blush: https://rstyle.me/+mgx7myV2XknXb9Wx7f...\n⭐️ EOS Moisturizer Vanilla: https://rstyle.me/+1uqIr13bIvVU-wAZml...\n⭐️ Nizoral Anti Dandruff: https://rstyle.me/+aeaKrxopPZq6IrVn6U...\n⭐️ Living Proof Dry Shampoo: https://rstyle.me/+xPU6MqEtCSTv0kpe2Y...\n⭐️ Drunk Elephant Jelly Cleanser: https://rstyle.me/+Z8YQU3J6gwmcunejEy...\n⭐️ La Roche Posey Moisturizer: https://rstyle.me/+E1lD4AQfYlq_fD0EtO...\n⭐️ Pixie Brow Tamer: https://rstyle.me/+lScmjDI_0muta21kAq...\n⭐️ Reminders of Him: https://rstyle.me/+MAHAq6T0Hw4ienNPMA...\n⭐️ Leather Multitool Holder: https://rstyle.me/+glcKB_OZ-JhzFvWo5_...\n⭐️ Bridgerton Sweatshirt: https://rstyle.me/+JmBh1eBL15cmaT4UAM...\n⭐️ Immune Bee Support: https://rstyle.me/+L4jHMfOxup78ccLz7-...\n⭐️ Hokas Sneakers: https://rstyle.me/+iBuk9WIIvtkjOP48Pv...\n⭐️ Candle Warmer (similar): https://rstyle.me/+sHOeZAjnfkzenTq2Ax...\n⭐️ LMNT Hydration Variety Pack: https://rstyle.me/+K_wrU6sv9ADWpt-yD5...\n⭐️ Sony ZV-1: https://amzn.to/3EgtKkL\n⭐️ My Keurig: https://rstyle.me/+t4ezf9hAe2HehanJ_C...\n📚 My August Book Pick: https://rstyle.me/+g17iXz0NHAfl4wL-ye...\n\n✨ Instagram @minxmindy\n✨ Subscribe here:    / @mindyminx   🕯️ Cozy videos every Tuesday, Thursday & Saturday at 9am EST!\n\nMINDY MINX STORE: https://www.bonfire.com/store/mindy-m...\n⭐️ Never Give Up Sweatshirt: https://www.bonfire.com/nevergiveupminx/\n⭐️ Never Give Up Bracelet: https://analuisa.pxf.io/c/1421990/276...\n#dayinthelife #lifestyle #dailyvlog",
+  "translatedText": null,
+  "descriptionLinks": [
+    {
+      "url": "https://rstyle.me/+v-XrFb9w2wsV5vdNAX21lw",
+      "text": "https://rstyle.me/+v-XrFb9w2wsV5vdNAX..."
+    },
+    {
+      "url": "https://rstyle.me/+7kMJ_O_qzbbnWdz43M6M3Q",
+      "text": "https://rstyle.me/+7kMJ_O_qzbbnWdz43M..."
+    },
+    {
+      "url": "https://rstyle.me/+HwFl1y7mOfgjjwFBI3M2jQ",
+      "text": "https://rstyle.me/+HwFl1y7mOfgjjwFBI3..."
+    },
+    {
+      "url": "https://rstyle.me/+HxGQYjY54fJYxEmChJx4bg",
+      "text": "https://rstyle.me/+HxGQYjY54fJYxEmChJ..."
+    },
+    {
+      "url": "https://rstyle.me/+7ylkJ6VNTY6OdDCTUpKOqQ",
+      "text": "https://rstyle.me/+7ylkJ6VNTY6OdDCTUp..."
+    },
+    {
+      "url": "https://rstyle.me/+m1Md57kAKbUbANUmHjt07A",
+      "text": "https://rstyle.me/+m1Md57kAKbUbANUmHj..."
+    },
+    {
+      "url": "https://rstyle.me/+Jvj5uT6dTadI3GbOOPtLUA",
+      "text": "https://rstyle.me/+Jvj5uT6dTadI3GbOOP..."
+    },
+    {
+      "url": "https://rstyle.me/+_Hlh48tBSaNam6atdgrGqQ",
+      "text": "https://rstyle.me/+_Hlh48tBSaNam6atdg..."
+    },
+    {
+      "url": "https://rstyle.me/+1Am04A5VPSs-6heNOB7HtQ",
+      "text": "https://rstyle.me/+1Am04A5VPSs-6heNOB..."
+    },
+    {
+      "url": "https://rstyle.me/+qjPBujHR6KMSgJby3CcSyA",
+      "text": "https://rstyle.me/+qjPBujHR6KMSgJby3C..."
+    },
+    {
+      "url": "https://rstyle.me/+t3bK9VTjKUE5EcC7Ze5k7Q",
+      "text": "https://rstyle.me/+t3bK9VTjKUE5EcC7Ze..."
+    },
+    {
+      "url": "https://rstyle.me/+C9PAqVgpUTYTyNAmH3OSdw",
+      "text": "https://rstyle.me/+C9PAqVgpUTYTyNAmH3..."
+    },
+    {
+      "url": "https://rstyle.me/+mgx7myV2XknXb9Wx7fGZ_w",
+      "text": "https://rstyle.me/+mgx7myV2XknXb9Wx7f..."
+    },
+    {
+      "url": "https://rstyle.me/+1uqIr13bIvVU-wAZmlJ1tQ",
+      "text": "https://rstyle.me/+1uqIr13bIvVU-wAZml..."
+    },
+    {
+      "url": "https://rstyle.me/+aeaKrxopPZq6IrVn6Uao-Q",
+      "text": "https://rstyle.me/+aeaKrxopPZq6IrVn6U..."
+    },
+    {
+      "url": "https://rstyle.me/+xPU6MqEtCSTv0kpe2Ym-NQ",
+      "text": "https://rstyle.me/+xPU6MqEtCSTv0kpe2Y..."
+    },
+    {
+      "url": "https://rstyle.me/+Z8YQU3J6gwmcunejEys5hQ",
+      "text": "https://rstyle.me/+Z8YQU3J6gwmcunejEy..."
+    },
+    {
+      "url": "https://rstyle.me/+E1lD4AQfYlq_fD0EtO_fUQ",
+      "text": "https://rstyle.me/+E1lD4AQfYlq_fD0EtO..."
+    },
+    {
+      "url": "https://rstyle.me/+lScmjDI_0muta21kAqyrIg",
+      "text": "https://rstyle.me/+lScmjDI_0muta21kAq..."
+    },
+    {
+      "url": "https://rstyle.me/+MAHAq6T0Hw4ienNPMA-eqA",
+      "text": "https://rstyle.me/+MAHAq6T0Hw4ienNPMA..."
+    },
+    {
+      "url": "https://rstyle.me/+glcKB_OZ-JhzFvWo5_xVPg",
+      "text": "https://rstyle.me/+glcKB_OZ-JhzFvWo5_..."
+    },
+    {
+      "url": "https://rstyle.me/+JmBh1eBL15cmaT4UAMGxNQ",
+      "text": "https://rstyle.me/+JmBh1eBL15cmaT4UAM..."
+    },
+    {
+      "url": "https://rstyle.me/+L4jHMfOxup78ccLz7-vQIQ",
+      "text": "https://rstyle.me/+L4jHMfOxup78ccLz7-..."
+    },
+    {
+      "url": "https://rstyle.me/+iBuk9WIIvtkjOP48Pvfhug",
+      "text": "https://rstyle.me/+iBuk9WIIvtkjOP48Pv..."
+    },
+    {
+      "url": "https://rstyle.me/+sHOeZAjnfkzenTq2AxKnFQ",
+      "text": "https://rstyle.me/+sHOeZAjnfkzenTq2Ax..."
+    },
+    {
+      "url": "https://rstyle.me/+K_wrU6sv9ADWpt-yD53mIQ",
+      "text": "https://rstyle.me/+K_wrU6sv9ADWpt-yD5..."
+    },
+    {
+      "url": "https://amzn.to/3EgtKkL",
+      "text": "https://amzn.to/3EgtKkL"
+    },
+    {
+      "url": "https://rstyle.me/+t4ezf9hAe2HehanJ_Cwxqg",
+      "text": "https://rstyle.me/+t4ezf9hAe2HehanJ_C..."
+    },
+    {
+      "url": "https://rstyle.me/+g17iXz0NHAfl4wL-yeJ6vw",
+      "text": "https://rstyle.me/+g17iXz0NHAfl4wL-ye..."
+    },
+    {
+      "url": "https://www.youtube.com/channel/UCCDXU_43IIkFb7qJcJei5cw",
+      "text": "   / @mindyminx  "
+    },
+    {
+      "url": "https://www.bonfire.com/store/mindy-minx-store/",
+      "text": "https://www.bonfire.com/store/mindy-m..."
+    },
+    {
+      "url": "https://www.bonfire.com/nevergiveupminx/",
+      "text": "https://www.bonfire.com/nevergiveupminx/"
+    },
+    {
+      "url": "https://analuisa.pxf.io/c/1421990/2760101/17411",
+      "text": "https://analuisa.pxf.io/c/1421990/276..."
+    },
+    {
+      "url": "https://www.youtube.com/hashtag/dayinthelife",
+      "text": "#dayinthelife"
+    },
+    {
+      "url": "https://www.youtube.com/hashtag/lifestyle",
+      "text": "#lifestyle"
+    },
+    {
+      "url": "https://www.youtube.com/hashtag/dailyvlog",
+      "text": "#dailyvlog"
+    }
+  ],
+  "subtitles": null,
+  "order": 3,
+  "commentsTurnedOff": false,
+  "fromYTUrl": "https://www.youtube.com/@MindyMinx/videos",
+  "isMonetized": null,
+  "hashtags": [
+    "#lifestyle",
+    "#dayinthelife",
+    "#dailyvlog"
+  ],
+  "formats": [],
+  "isMembersOnly": false,
+  "input": "https://www.youtube.com/@MindyMinx",
+  "fromChannelListPage": "videos",
+  "isPaidContent": false
+},
+{
+  "title": "Trying to Get My Life Together at 4:15AM as a Mom of 2",
+  "translatedTitle": null,
+  "type": "video",
+  "id": "mfi3I9ncK1M",
+  "url": "https://www.youtube.com/watch?v=mfi3I9ncK1M",
+  "thumbnailUrl": "https://i.ytimg.com/vi/mfi3I9ncK1M/maxresdefault.jpg",
+  "viewCount": 16525,
+  "date": "2026-02-21T14:01:12.000Z",
+  "likes": 887,
+  "location": null,
+  "channelName": "Mindy Minx",
+  "channelUrl": "https://www.youtube.com/channel/UCCDXU_43IIkFb7qJcJei5cw",
+  "channelUsername": "MindyMinx",
+  "collaborators": null,
+  "channelId": "UCCDXU_43IIkFb7qJcJei5cw",
+  "channelDescription": "Hi! I’m Mindy✨ wife, mama, and lover of all things cozy. I’m in a loving age gap marriage with my husband Larry, and together we’ve built a beautiful life with our two children, thanks to the miracle of IVF.\n\nHere on my channel, you’ll find the gentle rhythm of our everyday life, from warm moments at home and seasonal decorating to travel vlogs, Disney and Universal days, and little snippets of motherhood.\n\nExpect cozy chats over coffee, Fall and Christmas magic, simple joys, and a whole lot of heart. If you love a slower pace and finding beauty in the ordinary, you’re in the right place. 💛 Xoxo",
+  "channelJoinedDate": "Mar 26, 2015",
+  "channelDescriptionLinks": [
+    {
+      "text": "Instagram",
+      "url": "https://www.instagram.com/minxmindy/"
+    },
+    {
+      "text": "Email",
+      "url": "mindyminx@outloudtalent.com"
+    }
+  ],
+  "channelLocation": "United States",
+  "channelAvatarUrl": "https://yt3.googleusercontent.com/4zJ_rSuN04KqrdQARKNnaIcQnFC1nVoEwY1fC7NcBXaHoQQ4X5Yq1fGsHV-Fz9HA3vrUCIXz=s160-c-k-c0x00ffffff-no-rj",
+  "channelBannerUrl": "https://yt3.googleusercontent.com/wpOH2mEiRCJwDo3iBP98q8DnNdE4Minu_Qhn3zX9gNaeB_o44QMuWIxpVTiEwTMDlaioVlnS=w2560-fcrop64=1,00005a57ffffa5a8-k-c0xffffffff-no-nd-rj",
+  "channelTotalVideos": 1250,
+  "channelTotalViews": 48944340,
+  "numberOfSubscribers": 278000,
+  "isChannelVerified": true,
+  "inputChannelUrl": "https://www.youtube.com/@MindyMinx",
+  "isAgeRestricted": false,
+  "aboutChannelInfo": {
+    "channelDescription": "Hi! I’m Mindy✨ wife, mama, and lover of all things cozy. I’m in a loving age gap marriage with my husband Larry, and together we’ve built a beautiful life with our two children, thanks to the miracle of IVF.\n\nHere on my channel, you’ll find the gentle rhythm of our everyday life, from warm moments at home and seasonal decorating to travel vlogs, Disney and Universal days, and little snippets of motherhood.\n\nExpect cozy chats over coffee, Fall and Christmas magic, simple joys, and a whole lot of heart. If you love a slower pace and finding beauty in the ordinary, you’re in the right place. 💛 Xoxo",
+    "channelJoinedDate": "Mar 26, 2015",
+    "channelDescriptionLinks": [
+      {
+        "text": "Instagram",
+        "url": "https://www.instagram.com/minxmindy/"
+      },
+      {
+        "text": "Email",
+        "url": "mindyminx@outloudtalent.com"
+      }
+    ],
+    "channelLocation": "United States",
+    "channelUsername": "MindyMinx",
+    "channelAvatarUrl": "https://yt3.googleusercontent.com/4zJ_rSuN04KqrdQARKNnaIcQnFC1nVoEwY1fC7NcBXaHoQQ4X5Yq1fGsHV-Fz9HA3vrUCIXz=s160-c-k-c0x00ffffff-no-rj",
+    "channelBannerUrl": "https://yt3.googleusercontent.com/wpOH2mEiRCJwDo3iBP98q8DnNdE4Minu_Qhn3zX9gNaeB_o44QMuWIxpVTiEwTMDlaioVlnS=w2560-fcrop64=1,00005a57ffffa5a8-k-c0xffffffff-no-nd-rj",
+    "channelTotalVideos": 1250,
+    "channelTotalViews": 48944340,
+    "numberOfSubscribers": 278000,
+    "isChannelVerified": true,
+    "channelName": "Mindy Minx",
+    "channelUrl": "https://www.youtube.com/channel/UCCDXU_43IIkFb7qJcJei5cw",
+    "channelId": "UCCDXU_43IIkFb7qJcJei5cw",
+    "inputChannelUrl": "https://www.youtube.com/@MindyMinx",
+    "isAgeRestricted": false
+  },
+  "duration": "00:25:54",
+  "commentsCount": 142,
+  "text": "Thanks to Nanit for sponsoring today’s video! Head to https://nanit.yt.link/gn5Jld7 to learn more and use MINDY20 at checkout for 20% off a Nanit Smart Baby Monitor!\n\nMENTIONED:\n⭐️ Ello Glass Cup: https://rstyle.me/+v-XrFb9w2wsV5vdNAX...\n⭐️ La Roche Posey Sunscreen: https://rstyle.me/+7kMJ_O_qzbbnWdz43M...\n⭐️ Joggers: https://rstyle.me/+HwFl1y7mOfgjjwFBI3...\n✨ SlumberPod Travel Bed: https://rstyle.me/+HxGQYjY54fJYxEmChJ...\n⭐️ Pixi Depute Eye Patches: https://rstyle.me/+7ylkJ6VNTY6OdDCTUp...\n⭐️ Real Techniques Brush: https://rstyle.me/+m1Md57kAKbUbANUmHj...\n⭐️ CRZ Yoga Leggings: https://rstyle.me/+Jvj5uT6dTadI3GbOOP...\n⭐️ CRZ Yoga Tops: https://rstyle.me/+_Hlh48tBSaNam6atdg...\n⭐️ Crossbody Bag: https://rstyle.me/+1Am04A5VPSs-6heNOB...\n⭐️ VS Modern Brief: https://rstyle.me/+qjPBujHR6KMSgJby3C...\n⭐️Elf Glow Revivor Oil: https://rstyle.me/+t3bK9VTjKUE5EcC7Ze...\n⭐️ Elf Vit. C Serum: https://rstyle.me/+C9PAqVgpUTYTyNAmH3...\n⭐️ Milani Baked Blush: https://rstyle.me/+mgx7myV2XknXb9Wx7f...\n⭐️ EOS Moisturizer Vanilla: https://rstyle.me/+1uqIr13bIvVU-wAZml...\n⭐️ Nizoral Anti Dandruff: https://rstyle.me/+aeaKrxopPZq6IrVn6U...\n⭐️ Living Proof Dry Shampoo: https://rstyle.me/+xPU6MqEtCSTv0kpe2Y...\n⭐️ Drunk Elephant Jelly Cleanser: https://rstyle.me/+Z8YQU3J6gwmcunejEy...\n⭐️ La Roche Posey Moisturizer: https://rstyle.me/+E1lD4AQfYlq_fD0EtO...\n⭐️ Pixie Brow Tamer: https://rstyle.me/+lScmjDI_0muta21kAq...\n⭐️ Reminders of Him: https://rstyle.me/+MAHAq6T0Hw4ienNPMA...\n⭐️ Leather Multitool Holder: https://rstyle.me/+glcKB_OZ-JhzFvWo5_...\n⭐️ Bridgerton Sweatshirt: https://rstyle.me/+JmBh1eBL15cmaT4UAM...\n⭐️ Immune Bee Support: https://rstyle.me/+L4jHMfOxup78ccLz7-...\n⭐️ Hokas Sneakers: https://rstyle.me/+iBuk9WIIvtkjOP48Pv...\n⭐️ Candle Warmer (similar): https://rstyle.me/+sHOeZAjnfkzenTq2Ax...\n⭐️ LMNT Hydration Variety Pack: https://rstyle.me/+K_wrU6sv9ADWpt-yD5...\n⭐️ Sony ZV-1: https://amzn.to/3EgtKkL\n⭐️ My Keurig: https://rstyle.me/+t4ezf9hAe2HehanJ_C...\n📚 My August Book Pick: https://rstyle.me/+g17iXz0NHAfl4wL-ye...\n\n✨ Instagram @minxmindy\n✨ Subscribe here:    / @mindyminx   🕯️ Cozy videos every Tuesday, Thursday & Saturday at 9am EST!\n\nMINDY MINX STORE: https://www.bonfire.com/store/mindy-m...\n⭐️ Never Give Up Sweatshirt: https://www.bonfire.com/nevergiveupminx/\n⭐️ Never Give Up Bracelet: https://analuisa.pxf.io/c/1421990/276...\n#dayinthelife #lifestyle #dailyvlog",
+  "translatedText": null,
+  "descriptionLinks": [
+    {
+      "url": "https://nanit.yt.link/gn5Jld7",
+      "text": "https://nanit.yt.link/gn5Jld7"
+    },
+    {
+      "url": "https://rstyle.me/+v-XrFb9w2wsV5vdNAX21lw",
+      "text": "https://rstyle.me/+v-XrFb9w2wsV5vdNAX..."
+    },
+    {
+      "url": "https://rstyle.me/+7kMJ_O_qzbbnWdz43M6M3Q",
+      "text": "https://rstyle.me/+7kMJ_O_qzbbnWdz43M..."
+    },
+    {
+      "url": "https://rstyle.me/+HwFl1y7mOfgjjwFBI3M2jQ",
+      "text": "https://rstyle.me/+HwFl1y7mOfgjjwFBI3..."
+    },
+    {
+      "url": "https://rstyle.me/+HxGQYjY54fJYxEmChJx4bg",
+      "text": "https://rstyle.me/+HxGQYjY54fJYxEmChJ..."
+    },
+    {
+      "url": "https://rstyle.me/+7ylkJ6VNTY6OdDCTUpKOqQ",
+      "text": "https://rstyle.me/+7ylkJ6VNTY6OdDCTUp..."
+    },
+    {
+      "url": "https://rstyle.me/+m1Md57kAKbUbANUmHjt07A",
+      "text": "https://rstyle.me/+m1Md57kAKbUbANUmHj..."
+    },
+    {
+      "url": "https://rstyle.me/+Jvj5uT6dTadI3GbOOPtLUA",
+      "text": "https://rstyle.me/+Jvj5uT6dTadI3GbOOP..."
+    },
+    {
+      "url": "https://rstyle.me/+_Hlh48tBSaNam6atdgrGqQ",
+      "text": "https://rstyle.me/+_Hlh48tBSaNam6atdg..."
+    },
+    {
+      "url": "https://rstyle.me/+1Am04A5VPSs-6heNOB7HtQ",
+      "text": "https://rstyle.me/+1Am04A5VPSs-6heNOB..."
+    },
+    {
+      "url": "https://rstyle.me/+qjPBujHR6KMSgJby3CcSyA",
+      "text": "https://rstyle.me/+qjPBujHR6KMSgJby3C..."
+    },
+    {
+      "url": "https://rstyle.me/+t3bK9VTjKUE5EcC7Ze5k7Q",
+      "text": "https://rstyle.me/+t3bK9VTjKUE5EcC7Ze..."
+    },
+    {
+      "url": "https://rstyle.me/+C9PAqVgpUTYTyNAmH3OSdw",
+      "text": "https://rstyle.me/+C9PAqVgpUTYTyNAmH3..."
+    },
+    {
+      "url": "https://rstyle.me/+mgx7myV2XknXb9Wx7fGZ_w",
+      "text": "https://rstyle.me/+mgx7myV2XknXb9Wx7f..."
+    },
+    {
+      "url": "https://rstyle.me/+1uqIr13bIvVU-wAZmlJ1tQ",
+      "text": "https://rstyle.me/+1uqIr13bIvVU-wAZml..."
+    },
+    {
+      "url": "https://rstyle.me/+aeaKrxopPZq6IrVn6Uao-Q",
+      "text": "https://rstyle.me/+aeaKrxopPZq6IrVn6U..."
+    },
+    {
+      "url": "https://rstyle.me/+xPU6MqEtCSTv0kpe2Ym-NQ",
+      "text": "https://rstyle.me/+xPU6MqEtCSTv0kpe2Y..."
+    },
+    {
+      "url": "https://rstyle.me/+Z8YQU3J6gwmcunejEys5hQ",
+      "text": "https://rstyle.me/+Z8YQU3J6gwmcunejEy..."
+    },
+    {
+      "url": "https://rstyle.me/+E1lD4AQfYlq_fD0EtO_fUQ",
+      "text": "https://rstyle.me/+E1lD4AQfYlq_fD0EtO..."
+    },
+    {
+      "url": "https://rstyle.me/+lScmjDI_0muta21kAqyrIg",
+      "text": "https://rstyle.me/+lScmjDI_0muta21kAq..."
+    },
+    {
+      "url": "https://rstyle.me/+MAHAq6T0Hw4ienNPMA-eqA",
+      "text": "https://rstyle.me/+MAHAq6T0Hw4ienNPMA..."
+    },
+    {
+      "url": "https://rstyle.me/+glcKB_OZ-JhzFvWo5_xVPg",
+      "text": "https://rstyle.me/+glcKB_OZ-JhzFvWo5_..."
+    },
+    {
+      "url": "https://rstyle.me/+JmBh1eBL15cmaT4UAMGxNQ",
+      "text": "https://rstyle.me/+JmBh1eBL15cmaT4UAM..."
+    },
+    {
+      "url": "https://rstyle.me/+L4jHMfOxup78ccLz7-vQIQ",
+      "text": "https://rstyle.me/+L4jHMfOxup78ccLz7-..."
+    },
+    {
+      "url": "https://rstyle.me/+iBuk9WIIvtkjOP48Pvfhug",
+      "text": "https://rstyle.me/+iBuk9WIIvtkjOP48Pv..."
+    },
+    {
+      "url": "https://rstyle.me/+sHOeZAjnfkzenTq2AxKnFQ",
+      "text": "https://rstyle.me/+sHOeZAjnfkzenTq2Ax..."
+    },
+    {
+      "url": "https://rstyle.me/+K_wrU6sv9ADWpt-yD53mIQ",
+      "text": "https://rstyle.me/+K_wrU6sv9ADWpt-yD5..."
+    },
+    {
+      "url": "https://amzn.to/3EgtKkL",
+      "text": "https://amzn.to/3EgtKkL"
+    },
+    {
+      "url": "https://rstyle.me/+t4ezf9hAe2HehanJ_Cwxqg",
+      "text": "https://rstyle.me/+t4ezf9hAe2HehanJ_C..."
+    },
+    {
+      "url": "https://rstyle.me/+g17iXz0NHAfl4wL-yeJ6vw",
+      "text": "https://rstyle.me/+g17iXz0NHAfl4wL-ye..."
+    },
+    {
+      "url": "https://www.youtube.com/channel/UCCDXU_43IIkFb7qJcJei5cw",
+      "text": "   / @mindyminx  "
+    },
+    {
+      "url": "https://www.bonfire.com/store/mindy-minx-store/",
+      "text": "https://www.bonfire.com/store/mindy-m..."
+    },
+    {
+      "url": "https://www.bonfire.com/nevergiveupminx/",
+      "text": "https://www.bonfire.com/nevergiveupminx/"
+    },
+    {
+      "url": "https://analuisa.pxf.io/c/1421990/2760101/17411",
+      "text": "https://analuisa.pxf.io/c/1421990/276..."
+    },
+    {
+      "url": "https://www.youtube.com/hashtag/dayinthelife",
+      "text": "#dayinthelife"
+    },
+    {
+      "url": "https://www.youtube.com/hashtag/lifestyle",
+      "text": "#lifestyle"
+    },
+    {
+      "url": "https://www.youtube.com/hashtag/dailyvlog",
+      "text": "#dailyvlog"
+    }
+  ],
+  "subtitles": null,
+  "order": 4,
+  "commentsTurnedOff": false,
+  "fromYTUrl": "https://www.youtube.com/@MindyMinx/videos",
+  "isMonetized": null,
+  "hashtags": [
+    "#lifestyle",
+    "#dayinthelife",
+    "#dailyvlog"
+  ],
+  "formats": [],
+  "isMembersOnly": false,
+  "input": "https://www.youtube.com/@MindyMinx",
+  "fromChannelListPage": "videos",
+  "isPaidContent": true
+},
+{
+  "title": "Productive Morning In My Life | School Drop Off & HUGE Makeup Declutter",
+  "translatedTitle": null,
+  "type": "video",
+  "id": "VTVkKd65ZXY",
+  "url": "https://www.youtube.com/watch?v=VTVkKd65ZXY",
+  "thumbnailUrl": "https://i.ytimg.com/vi/VTVkKd65ZXY/maxresdefault.jpg",
+  "viewCount": 11393,
+  "date": "2026-02-26T20:18:43.000Z",
+  "likes": 665,
+  "location": null,
+  "channelName": "Mindy Minx",
+  "channelUrl": "https://www.youtube.com/channel/UCCDXU_43IIkFb7qJcJei5cw",
+  "channelUsername": "MindyMinx",
+  "collaborators": null,
+  "channelId": "UCCDXU_43IIkFb7qJcJei5cw",
+  "channelDescription": "Hi! I’m Mindy✨ wife, mama, and lover of all things cozy. I’m in a loving age gap marriage with my husband Larry, and together we’ve built a beautiful life with our two children, thanks to the miracle of IVF.\n\nHere on my channel, you’ll find the gentle rhythm of our everyday life, from warm moments at home and seasonal decorating to travel vlogs, Disney and Universal days, and little snippets of motherhood.\n\nExpect cozy chats over coffee, Fall and Christmas magic, simple joys, and a whole lot of heart. If you love a slower pace and finding beauty in the ordinary, you’re in the right place. 💛 Xoxo",
+  "channelJoinedDate": "Mar 26, 2015",
+  "channelDescriptionLinks": [
+    {
+      "text": "Instagram",
+      "url": "https://www.instagram.com/minxmindy/"
+    },
+    {
+      "text": "Email",
+      "url": "mindyminx@outloudtalent.com"
+    }
+  ],
+  "channelLocation": "United States",
+  "channelAvatarUrl": "https://yt3.googleusercontent.com/4zJ_rSuN04KqrdQARKNnaIcQnFC1nVoEwY1fC7NcBXaHoQQ4X5Yq1fGsHV-Fz9HA3vrUCIXz=s160-c-k-c0x00ffffff-no-rj",
+  "channelBannerUrl": "https://yt3.googleusercontent.com/wpOH2mEiRCJwDo3iBP98q8DnNdE4Minu_Qhn3zX9gNaeB_o44QMuWIxpVTiEwTMDlaioVlnS=w2560-fcrop64=1,00005a57ffffa5a8-k-c0xffffffff-no-nd-rj",
+  "channelTotalVideos": 1250,
+  "channelTotalViews": 48944340,
+  "numberOfSubscribers": 278000,
+  "isChannelVerified": true,
+  "inputChannelUrl": "https://www.youtube.com/@MindyMinx",
+  "isAgeRestricted": false,
+  "aboutChannelInfo": {
+    "channelDescription": "Hi! I’m Mindy✨ wife, mama, and lover of all things cozy. I’m in a loving age gap marriage with my husband Larry, and together we’ve built a beautiful life with our two children, thanks to the miracle of IVF.\n\nHere on my channel, you’ll find the gentle rhythm of our everyday life, from warm moments at home and seasonal decorating to travel vlogs, Disney and Universal days, and little snippets of motherhood.\n\nExpect cozy chats over coffee, Fall and Christmas magic, simple joys, and a whole lot of heart. If you love a slower pace and finding beauty in the ordinary, you’re in the right place. 💛 Xoxo",
+    "channelJoinedDate": "Mar 26, 2015",
+    "channelDescriptionLinks": [
+      {
+        "text": "Instagram",
+        "url": "https://www.instagram.com/minxmindy/"
+      },
+      {
+        "text": "Email",
+        "url": "mindyminx@outloudtalent.com"
+      }
+    ],
+    "channelLocation": "United States",
+    "channelUsername": "MindyMinx",
+    "channelAvatarUrl": "https://yt3.googleusercontent.com/4zJ_rSuN04KqrdQARKNnaIcQnFC1nVoEwY1fC7NcBXaHoQQ4X5Yq1fGsHV-Fz9HA3vrUCIXz=s160-c-k-c0x00ffffff-no-rj",
+    "channelBannerUrl": "https://yt3.googleusercontent.com/wpOH2mEiRCJwDo3iBP98q8DnNdE4Minu_Qhn3zX9gNaeB_o44QMuWIxpVTiEwTMDlaioVlnS=w2560-fcrop64=1,00005a57ffffa5a8-k-c0xffffffff-no-nd-rj",
+    "channelTotalVideos": 1250,
+    "channelTotalViews": 48944340,
+    "numberOfSubscribers": 278000,
+    "isChannelVerified": true,
+    "channelName": "Mindy Minx",
+    "channelUrl": "https://www.youtube.com/channel/UCCDXU_43IIkFb7qJcJei5cw",
+    "channelId": "UCCDXU_43IIkFb7qJcJei5cw",
+    "inputChannelUrl": "https://www.youtube.com/@MindyMinx",
+    "isAgeRestricted": false
+  },
+  "duration": "00:28:30",
+  "commentsCount": 98,
+  "text": "Thanks to Nanit for sponsoring today’s video! Head to https://nanit.yt.link/G3vPtdE to learn more and use MINDY20 at checkout for 20% off a Nanit Smart Baby Monitor!\n\nMENTIONED:\n⭐️ Maybelline Warm Me Up Lip: https://rstyle.me/+ZQPEOreilaCQ709LXj...\n⭐️ NYX Brow Mascara: https://rstyle.me/+hh4GKmjMuUy9T2yNMF...\n⭐️ Bigelow Mentha Lip Tint: https://rstyle.me/+tvrUsHA67cp-rSXklX...\n⭐️ NYX Glitter Glue: https://rstyle.me/+TYOqIbLwTvKbNkncm2...\n⭐️ Maybelline Concealer: https://rstyle.me/+8c6MpjIkTMZ0erx5qV...\n⭐️ Kosas Concealer: https://rstyle.me/+E4jQWtYfgoqqR3ZUs1...\n⭐️ Tarte Radiant Concealer: https://rstyle.me/+QUZq6tC8t9myP_ux-0...\n⭐️ Alastin Skin Tint: https://rstyle.me/+kzHJGnP-kcQ6H-ikLS...\n⭐️ It Cosmetics Nude Glow: https://rstyle.me/+wmi6Hik0Sk94OgiwDf...\n⭐️ Mac Powder Foundation: https://rstyle.me/+oPxZ9LC3OoOmZggZ7s...\n⭐️ Ello Glass Cup: https://rstyle.me/+v-XrFb9w2wsV5vdNAX...\n⭐️ La Roche Posey Sunscreen: https://rstyle.me/+7kMJ_O_qzbbnWdz43M...\n⭐️ Joggers: https://rstyle.me/+HwFl1y7mOfgjjwFBI3...\n✨ SlumberPod Travel Bed: https://rstyle.me/+HxGQYjY54fJYxEmChJ...\n⭐️ Pixi Depute Eye Patches: https://rstyle.me/+7ylkJ6VNTY6OdDCTUp...\n⭐️ Real Techniques Brush: https://rstyle.me/+m1Md57kAKbUbANUmHj...\n⭐️ CRZ Yoga Leggings: https://rstyle.me/+Jvj5uT6dTadI3GbOOP...\n⭐️ CRZ Yoga Tops: https://rstyle.me/+_Hlh48tBSaNam6atdg...\n⭐️ Crossbody Bag: https://rstyle.me/+1Am04A5VPSs-6heNOB...\n⭐️ VS Modern Brief: https://rstyle.me/+qjPBujHR6KMSgJby3C...\n⭐️Elf Glow Revivor Oil: https://rstyle.me/+t3bK9VTjKUE5EcC7Ze...\n⭐️ Elf Vit. C Serum: https://rstyle.me/+C9PAqVgpUTYTyNAmH3...\n⭐️ Milani Baked Blush: https://rstyle.me/+mgx7myV2XknXb9Wx7f...\n⭐️ EOS Moisturizer Vanilla: https://rstyle.me/+1uqIr13bIvVU-wAZml...\n⭐️ Nizoral Anti Dandruff: https://rstyle.me/+aeaKrxopPZq6IrVn6U...\n⭐️ Living Proof Dry Shampoo: https://rstyle.me/+xPU6MqEtCSTv0kpe2Y...\n⭐️ Drunk Elephant Jelly Cleanser: https://rstyle.me/+Z8YQU3J6gwmcunejEy...\n⭐️ La Roche Posey Moisturizer: https://rstyle.me/+E1lD4AQfYlq_fD0EtO...\n⭐️ Pixie Brow Tamer: https://rstyle.me/+lScmjDI_0muta21kAq...\n⭐️ Reminders of Him: https://rstyle.me/+MAHAq6T0Hw4ienNPMA...\n⭐️ Leather Multitool Holder: https://rstyle.me/+glcKB_OZ-JhzFvWo5_...\n⭐️ Bridgerton Sweatshirt: https://rstyle.me/+JmBh1eBL15cmaT4UAM...\n⭐️ Immune Bee Support: https://rstyle.me/+L4jHMfOxup78ccLz7-...\n⭐️ Hokas Sneakers: https://rstyle.me/+iBuk9WIIvtkjOP48Pv...\n⭐️ Candle Warmer (similar): https://rstyle.me/+sHOeZAjnfkzenTq2Ax...\n⭐️ LMNT Hydration Variety Pack: https://rstyle.me/+K_wrU6sv9ADWpt-yD5...\n⭐️ Sony ZV-1: https://amzn.to/3EgtKkL\n⭐️ My Keurig: https://rstyle.me/+t4ezf9hAe2HehanJ_C...\n📚 My August Book Pick: https://rstyle.me/+g17iXz0NHAfl4wL-ye...\n\n✨ Instagram @minxmindy\n✨ Subscribe here:    / @mindyminx   🕯️ Cozy videos every Tuesday, Thursday & Saturday at 9am EST!\n\nMINDY MINX STORE: https://www.bonfire.com/store/mindy-m...\n⭐️ Never Give Up Sweatshirt: https://www.bonfire.com/nevergiveupminx/\n⭐️ Never Give Up Bracelet: https://analuisa.pxf.io/c/1421990/276...\n#dayinthelife #lifestyle #dailyvlog",
+  "translatedText": null,
+  "descriptionLinks": [
+    {
+      "url": "https://nanit.yt.link/G3vPtdE",
+      "text": "https://nanit.yt.link/G3vPtdE"
+    },
+    {
+      "url": "https://rstyle.me/+ZQPEOreilaCQ709LXjGIzg",
+      "text": "https://rstyle.me/+ZQPEOreilaCQ709LXj..."
+    },
+    {
+      "url": "https://rstyle.me/+hh4GKmjMuUy9T2yNMFq0sw",
+      "text": "https://rstyle.me/+hh4GKmjMuUy9T2yNMF..."
+    },
+    {
+      "url": "https://rstyle.me/+tvrUsHA67cp-rSXklXkU3Q",
+      "text": "https://rstyle.me/+tvrUsHA67cp-rSXklX..."
+    },
+    {
+      "url": "https://rstyle.me/+TYOqIbLwTvKbNkncm2OTRg",
+      "text": "https://rstyle.me/+TYOqIbLwTvKbNkncm2..."
+    },
+    {
+      "url": "https://rstyle.me/+8c6MpjIkTMZ0erx5qVxi4g",
+      "text": "https://rstyle.me/+8c6MpjIkTMZ0erx5qV..."
+    },
+    {
+      "url": "https://rstyle.me/+E4jQWtYfgoqqR3ZUs1MNHg",
+      "text": "https://rstyle.me/+E4jQWtYfgoqqR3ZUs1..."
+    },
+    {
+      "url": "https://rstyle.me/+QUZq6tC8t9myP_ux-0sD0Q",
+      "text": "https://rstyle.me/+QUZq6tC8t9myP_ux-0..."
+    },
+    {
+      "url": "https://rstyle.me/+kzHJGnP-kcQ6H-ikLSHikw",
+      "text": "https://rstyle.me/+kzHJGnP-kcQ6H-ikLS..."
+    },
+    {
+      "url": "https://rstyle.me/+wmi6Hik0Sk94OgiwDfHO9g",
+      "text": "https://rstyle.me/+wmi6Hik0Sk94OgiwDf..."
+    },
+    {
+      "url": "https://rstyle.me/+oPxZ9LC3OoOmZggZ7so6fQ",
+      "text": "https://rstyle.me/+oPxZ9LC3OoOmZggZ7s..."
+    },
+    {
+      "url": "https://rstyle.me/+v-XrFb9w2wsV5vdNAX21lw",
+      "text": "https://rstyle.me/+v-XrFb9w2wsV5vdNAX..."
+    },
+    {
+      "url": "https://rstyle.me/+7kMJ_O_qzbbnWdz43M6M3Q",
+      "text": "https://rstyle.me/+7kMJ_O_qzbbnWdz43M..."
+    },
+    {
+      "url": "https://rstyle.me/+HwFl1y7mOfgjjwFBI3M2jQ",
+      "text": "https://rstyle.me/+HwFl1y7mOfgjjwFBI3..."
+    },
+    {
+      "url": "https://rstyle.me/+HxGQYjY54fJYxEmChJx4bg",
+      "text": "https://rstyle.me/+HxGQYjY54fJYxEmChJ..."
+    },
+    {
+      "url": "https://rstyle.me/+7ylkJ6VNTY6OdDCTUpKOqQ",
+      "text": "https://rstyle.me/+7ylkJ6VNTY6OdDCTUp..."
+    },
+    {
+      "url": "https://rstyle.me/+m1Md57kAKbUbANUmHjt07A",
+      "text": "https://rstyle.me/+m1Md57kAKbUbANUmHj..."
+    },
+    {
+      "url": "https://rstyle.me/+Jvj5uT6dTadI3GbOOPtLUA",
+      "text": "https://rstyle.me/+Jvj5uT6dTadI3GbOOP..."
+    },
+    {
+      "url": "https://rstyle.me/+_Hlh48tBSaNam6atdgrGqQ",
+      "text": "https://rstyle.me/+_Hlh48tBSaNam6atdg..."
+    },
+    {
+      "url": "https://rstyle.me/+1Am04A5VPSs-6heNOB7HtQ",
+      "text": "https://rstyle.me/+1Am04A5VPSs-6heNOB..."
+    },
+    {
+      "url": "https://rstyle.me/+qjPBujHR6KMSgJby3CcSyA",
+      "text": "https://rstyle.me/+qjPBujHR6KMSgJby3C..."
+    },
+    {
+      "url": "https://rstyle.me/+t3bK9VTjKUE5EcC7Ze5k7Q",
+      "text": "https://rstyle.me/+t3bK9VTjKUE5EcC7Ze..."
+    },
+    {
+      "url": "https://rstyle.me/+C9PAqVgpUTYTyNAmH3OSdw",
+      "text": "https://rstyle.me/+C9PAqVgpUTYTyNAmH3..."
+    },
+    {
+      "url": "https://rstyle.me/+mgx7myV2XknXb9Wx7fGZ_w",
+      "text": "https://rstyle.me/+mgx7myV2XknXb9Wx7f..."
+    },
+    {
+      "url": "https://rstyle.me/+1uqIr13bIvVU-wAZmlJ1tQ",
+      "text": "https://rstyle.me/+1uqIr13bIvVU-wAZml..."
+    },
+    {
+      "url": "https://rstyle.me/+aeaKrxopPZq6IrVn6Uao-Q",
+      "text": "https://rstyle.me/+aeaKrxopPZq6IrVn6U..."
+    },
+    {
+      "url": "https://rstyle.me/+xPU6MqEtCSTv0kpe2Ym-NQ",
+      "text": "https://rstyle.me/+xPU6MqEtCSTv0kpe2Y..."
+    },
+    {
+      "url": "https://rstyle.me/+Z8YQU3J6gwmcunejEys5hQ",
+      "text": "https://rstyle.me/+Z8YQU3J6gwmcunejEy..."
+    },
+    {
+      "url": "https://rstyle.me/+E1lD4AQfYlq_fD0EtO_fUQ",
+      "text": "https://rstyle.me/+E1lD4AQfYlq_fD0EtO..."
+    },
+    {
+      "url": "https://rstyle.me/+lScmjDI_0muta21kAqyrIg",
+      "text": "https://rstyle.me/+lScmjDI_0muta21kAq..."
+    },
+    {
+      "url": "https://rstyle.me/+MAHAq6T0Hw4ienNPMA-eqA",
+      "text": "https://rstyle.me/+MAHAq6T0Hw4ienNPMA..."
+    },
+    {
+      "url": "https://rstyle.me/+glcKB_OZ-JhzFvWo5_xVPg",
+      "text": "https://rstyle.me/+glcKB_OZ-JhzFvWo5_..."
+    },
+    {
+      "url": "https://rstyle.me/+JmBh1eBL15cmaT4UAMGxNQ",
+      "text": "https://rstyle.me/+JmBh1eBL15cmaT4UAM..."
+    },
+    {
+      "url": "https://rstyle.me/+L4jHMfOxup78ccLz7-vQIQ",
+      "text": "https://rstyle.me/+L4jHMfOxup78ccLz7-..."
+    },
+    {
+      "url": "https://rstyle.me/+iBuk9WIIvtkjOP48Pvfhug",
+      "text": "https://rstyle.me/+iBuk9WIIvtkjOP48Pv..."
+    },
+    {
+      "url": "https://rstyle.me/+sHOeZAjnfkzenTq2AxKnFQ",
+      "text": "https://rstyle.me/+sHOeZAjnfkzenTq2Ax..."
+    },
+    {
+      "url": "https://rstyle.me/+K_wrU6sv9ADWpt-yD53mIQ",
+      "text": "https://rstyle.me/+K_wrU6sv9ADWpt-yD5..."
+    },
+    {
+      "url": "https://amzn.to/3EgtKkL",
+      "text": "https://amzn.to/3EgtKkL"
+    },
+    {
+      "url": "https://rstyle.me/+t4ezf9hAe2HehanJ_Cwxqg",
+      "text": "https://rstyle.me/+t4ezf9hAe2HehanJ_C..."
+    },
+    {
+      "url": "https://rstyle.me/+g17iXz0NHAfl4wL-yeJ6vw",
+      "text": "https://rstyle.me/+g17iXz0NHAfl4wL-ye..."
+    },
+    {
+      "url": "https://www.youtube.com/channel/UCCDXU_43IIkFb7qJcJei5cw",
+      "text": "   / @mindyminx  "
+    },
+    {
+      "url": "https://www.bonfire.com/store/mindy-minx-store/",
+      "text": "https://www.bonfire.com/store/mindy-m..."
+    },
+    {
+      "url": "https://www.bonfire.com/nevergiveupminx/",
+      "text": "https://www.bonfire.com/nevergiveupminx/"
+    },
+    {
+      "url": "https://analuisa.pxf.io/c/1421990/2760101/17411",
+      "text": "https://analuisa.pxf.io/c/1421990/276..."
+    },
+    {
+      "url": "https://www.youtube.com/hashtag/dayinthelife",
+      "text": "#dayinthelife"
+    },
+    {
+      "url": "https://www.youtube.com/hashtag/lifestyle",
+      "text": "#lifestyle"
+    },
+    {
+      "url": "https://www.youtube.com/hashtag/dailyvlog",
+      "text": "#dailyvlog"
+    }
+  ],
+  "subtitles": null,
+  "order": 2,
+  "commentsTurnedOff": false,
+  "fromYTUrl": "https://www.youtube.com/@MindyMinx/videos",
+  "isMonetized": null,
+  "hashtags": [
+    "#lifestyle",
+    "#dayinthelife",
+    "#dailyvlog"
+  ],
+  "formats": [],
+  "isMembersOnly": false,
+  "input": "https://www.youtube.com/@MindyMinx",
+  "fromChannelListPage": "videos",
+  "isPaidContent": true
+},
+{
+  "title": "DAY IN THE LIFE | Updates, grwm Chats, Spring Haul & Target Shopping",
+  "translatedTitle": null,
+  "type": "video",
+  "id": "gbIIXecKZsU",
+  "url": "https://www.youtube.com/watch?v=gbIIXecKZsU",
+  "thumbnailUrl": "https://i.ytimg.com/vi/gbIIXecKZsU/maxresdefault.jpg",
+  "viewCount": 15634,
+  "date": "2026-03-05T14:01:06.000Z",
+  "likes": 867,
+  "location": null,
+  "channelName": "Mindy Minx",
+  "channelUrl": "https://www.youtube.com/channel/UCCDXU_43IIkFb7qJcJei5cw",
+  "channelUsername": "MindyMinx",
+  "collaborators": null,
+  "channelId": "UCCDXU_43IIkFb7qJcJei5cw",
+  "channelDescription": "Hi! I’m Mindy✨ wife, mama, and lover of all things cozy. I’m in a loving age gap marriage with my husband Larry, and together we’ve built a beautiful life with our two children, thanks to the miracle of IVF.\n\nHere on my channel, you’ll find the gentle rhythm of our everyday life, from warm moments at home and seasonal decorating to travel vlogs, Disney and Universal days, and little snippets of motherhood.\n\nExpect cozy chats over coffee, Fall and Christmas magic, simple joys, and a whole lot of heart. If you love a slower pace and finding beauty in the ordinary, you’re in the right place. 💛 Xoxo",
+  "channelJoinedDate": "Mar 26, 2015",
+  "channelDescriptionLinks": [
+    {
+      "text": "Instagram",
+      "url": "https://www.instagram.com/minxmindy/"
+    },
+    {
+      "text": "Email",
+      "url": "mindyminx@outloudtalent.com"
+    }
+  ],
+  "channelLocation": "United States",
+  "channelAvatarUrl": "https://yt3.googleusercontent.com/4zJ_rSuN04KqrdQARKNnaIcQnFC1nVoEwY1fC7NcBXaHoQQ4X5Yq1fGsHV-Fz9HA3vrUCIXz=s160-c-k-c0x00ffffff-no-rj",
+  "channelBannerUrl": "https://yt3.googleusercontent.com/wpOH2mEiRCJwDo3iBP98q8DnNdE4Minu_Qhn3zX9gNaeB_o44QMuWIxpVTiEwTMDlaioVlnS=w2560-fcrop64=1,00005a57ffffa5a8-k-c0xffffffff-no-nd-rj",
+  "channelTotalVideos": 1250,
+  "channelTotalViews": 48944340,
+  "numberOfSubscribers": 278000,
+  "isChannelVerified": true,
+  "inputChannelUrl": "https://www.youtube.com/@MindyMinx",
+  "isAgeRestricted": false,
+  "aboutChannelInfo": {
+    "channelDescription": "Hi! I’m Mindy✨ wife, mama, and lover of all things cozy. I’m in a loving age gap marriage with my husband Larry, and together we’ve built a beautiful life with our two children, thanks to the miracle of IVF.\n\nHere on my channel, you’ll find the gentle rhythm of our everyday life, from warm moments at home and seasonal decorating to travel vlogs, Disney and Universal days, and little snippets of motherhood.\n\nExpect cozy chats over coffee, Fall and Christmas magic, simple joys, and a whole lot of heart. If you love a slower pace and finding beauty in the ordinary, you’re in the right place. 💛 Xoxo",
+    "channelJoinedDate": "Mar 26, 2015",
+    "channelDescriptionLinks": [
+      {
+        "text": "Instagram",
+        "url": "https://www.instagram.com/minxmindy/"
+      },
+      {
+        "text": "Email",
+        "url": "mindyminx@outloudtalent.com"
+      }
+    ],
+    "channelLocation": "United States",
+    "channelUsername": "MindyMinx",
+    "channelAvatarUrl": "https://yt3.googleusercontent.com/4zJ_rSuN04KqrdQARKNnaIcQnFC1nVoEwY1fC7NcBXaHoQQ4X5Yq1fGsHV-Fz9HA3vrUCIXz=s160-c-k-c0x00ffffff-no-rj",
+    "channelBannerUrl": "https://yt3.googleusercontent.com/wpOH2mEiRCJwDo3iBP98q8DnNdE4Minu_Qhn3zX9gNaeB_o44QMuWIxpVTiEwTMDlaioVlnS=w2560-fcrop64=1,00005a57ffffa5a8-k-c0xffffffff-no-nd-rj",
+    "channelTotalVideos": 1250,
+    "channelTotalViews": 48944340,
+    "numberOfSubscribers": 278000,
+    "isChannelVerified": true,
+    "channelName": "Mindy Minx",
+    "channelUrl": "https://www.youtube.com/channel/UCCDXU_43IIkFb7qJcJei5cw",
+    "channelId": "UCCDXU_43IIkFb7qJcJei5cw",
+    "inputChannelUrl": "https://www.youtube.com/@MindyMinx",
+    "isAgeRestricted": false
+  },
+  "duration": "00:32:09",
+  "commentsCount": 217,
+  "text": "Upgrade your closet with Quince. Go to  http://Quince.com/mindy\nfor free shipping on your next order and 365-day returns.\nMENTIONED:\n⭐️ Maybelline Warm Me Up Lip: https://rstyle.me/+ZQPEOreilaCQ709LXj...\n⭐️ NYX Brow Mascara: https://rstyle.me/+hh4GKmjMuUy9T2yNMF...\n⭐️ Bigelow Mentha Lip Tint: https://rstyle.me/+tvrUsHA67cp-rSXklX...\n⭐️ NYX Glitter Glue: https://rstyle.me/+TYOqIbLwTvKbNkncm2...\n⭐️ Maybelline Concealer: https://rstyle.me/+8c6MpjIkTMZ0erx5qV...\n⭐️ Kosas Concealer: https://rstyle.me/+E4jQWtYfgoqqR3ZUs1...\n⭐️ Tarte Radiant Concealer: https://rstyle.me/+QUZq6tC8t9myP_ux-0...\n⭐️ Alastin Skin Tint: https://rstyle.me/+kzHJGnP-kcQ6H-ikLS...\n⭐️ It Cosmetics Nude Glow: https://rstyle.me/+wmi6Hik0Sk94OgiwDf...\n⭐️ Mac Powder Foundation: https://rstyle.me/+oPxZ9LC3OoOmZggZ7s...\n⭐️ Ello Glass Cup: https://rstyle.me/+v-XrFb9w2wsV5vdNAX...\n⭐️ La Roche Posey Sunscreen: https://rstyle.me/+7kMJ_O_qzbbnWdz43M...\n⭐️ Joggers: https://rstyle.me/+HwFl1y7mOfgjjwFBI3...\n✨ SlumberPod Travel Bed: https://rstyle.me/+HxGQYjY54fJYxEmChJ...\n⭐️ Pixi Depute Eye Patches: https://rstyle.me/+7ylkJ6VNTY6OdDCTUp...\n⭐️ Real Techniques Brush: https://rstyle.me/+m1Md57kAKbUbANUmHj...\n⭐️ CRZ Yoga Leggings: https://rstyle.me/+Jvj5uT6dTadI3GbOOP...\n⭐️ CRZ Yoga Tops: https://rstyle.me/+_Hlh48tBSaNam6atdg...\n⭐️ Crossbody Bag: https://rstyle.me/+1Am04A5VPSs-6heNOB...\n⭐️ VS Modern Brief: https://rstyle.me/+qjPBujHR6KMSgJby3C...\n⭐️Elf Glow Revivor Oil: https://rstyle.me/+t3bK9VTjKUE5EcC7Ze...\n⭐️ Elf Vit. C Serum: https://rstyle.me/+C9PAqVgpUTYTyNAmH3...\n⭐️ Milani Baked Blush: https://rstyle.me/+mgx7myV2XknXb9Wx7f...\n⭐️ EOS Moisturizer Vanilla: https://rstyle.me/+1uqIr13bIvVU-wAZml...\n⭐️ Nizoral Anti Dandruff: https://rstyle.me/+aeaKrxopPZq6IrVn6U...\n⭐️ Living Proof Dry Shampoo: https://rstyle.me/+xPU6MqEtCSTv0kpe2Y...\n⭐️ Drunk Elephant Jelly Cleanser: https://rstyle.me/+Z8YQU3J6gwmcunejEy...\n⭐️ La Roche Posey Moisturizer: https://rstyle.me/+E1lD4AQfYlq_fD0EtO...\n⭐️ Pixie Brow Tamer: https://rstyle.me/+lScmjDI_0muta21kAq...\n⭐️ Reminders of Him: https://rstyle.me/+MAHAq6T0Hw4ienNPMA...\n⭐️ Leather Multitool Holder: https://rstyle.me/+glcKB_OZ-JhzFvWo5_...\n⭐️ Bridgerton Sweatshirt: https://rstyle.me/+JmBh1eBL15cmaT4UAM...\n⭐️ Immune Bee Support: https://rstyle.me/+L4jHMfOxup78ccLz7-...\n⭐️ Hokas Sneakers: https://rstyle.me/+iBuk9WIIvtkjOP48Pv...\n⭐️ Candle Warmer (similar): https://rstyle.me/+sHOeZAjnfkzenTq2Ax...\n⭐️ LMNT Hydration Variety Pack: https://rstyle.me/+K_wrU6sv9ADWpt-yD5...\n⭐️ Sony ZV-1: https://amzn.to/3EgtKkL\n⭐️ My Keurig: https://rstyle.me/+t4ezf9hAe2HehanJ_C...\n📚 My August Book Pick: https://rstyle.me/+g17iXz0NHAfl4wL-ye...\n\n✨ Instagram @minxmindy\n✨ Subscribe here:    / @mindyminx   🕯️ Cozy videos every Tuesday, Thursday & Saturday at 9am EST!\n\nMINDY MINX STORE: https://www.bonfire.com/store/mindy-m...\n⭐️ Never Give Up Sweatshirt: https://www.bonfire.com/nevergiveupminx/\n⭐️ Never Give Up Bracelet: https://analuisa.pxf.io/c/1421990/276...\n#dayinthelife #lifestyle #dailyvlog",
+  "translatedText": null,
+  "descriptionLinks": [
+    {
+      "url": "http://Quince.com/mindy",
+      "text": "http://Quince.com/mindy"
+    },
+    {
+      "url": "https://rstyle.me/+ZQPEOreilaCQ709LXjGIzg",
+      "text": "https://rstyle.me/+ZQPEOreilaCQ709LXj..."
+    },
+    {
+      "url": "https://rstyle.me/+hh4GKmjMuUy9T2yNMFq0sw",
+      "text": "https://rstyle.me/+hh4GKmjMuUy9T2yNMF..."
+    },
+    {
+      "url": "https://rstyle.me/+tvrUsHA67cp-rSXklXkU3Q",
+      "text": "https://rstyle.me/+tvrUsHA67cp-rSXklX..."
+    },
+    {
+      "url": "https://rstyle.me/+TYOqIbLwTvKbNkncm2OTRg",
+      "text": "https://rstyle.me/+TYOqIbLwTvKbNkncm2..."
+    },
+    {
+      "url": "https://rstyle.me/+8c6MpjIkTMZ0erx5qVxi4g",
+      "text": "https://rstyle.me/+8c6MpjIkTMZ0erx5qV..."
+    },
+    {
+      "url": "https://rstyle.me/+E4jQWtYfgoqqR3ZUs1MNHg",
+      "text": "https://rstyle.me/+E4jQWtYfgoqqR3ZUs1..."
+    },
+    {
+      "url": "https://rstyle.me/+QUZq6tC8t9myP_ux-0sD0Q",
+      "text": "https://rstyle.me/+QUZq6tC8t9myP_ux-0..."
+    },
+    {
+      "url": "https://rstyle.me/+kzHJGnP-kcQ6H-ikLSHikw",
+      "text": "https://rstyle.me/+kzHJGnP-kcQ6H-ikLS..."
+    },
+    {
+      "url": "https://rstyle.me/+wmi6Hik0Sk94OgiwDfHO9g",
+      "text": "https://rstyle.me/+wmi6Hik0Sk94OgiwDf..."
+    },
+    {
+      "url": "https://rstyle.me/+oPxZ9LC3OoOmZggZ7so6fQ",
+      "text": "https://rstyle.me/+oPxZ9LC3OoOmZggZ7s..."
+    },
+    {
+      "url": "https://rstyle.me/+v-XrFb9w2wsV5vdNAX21lw",
+      "text": "https://rstyle.me/+v-XrFb9w2wsV5vdNAX..."
+    },
+    {
+      "url": "https://rstyle.me/+7kMJ_O_qzbbnWdz43M6M3Q",
+      "text": "https://rstyle.me/+7kMJ_O_qzbbnWdz43M..."
+    },
+    {
+      "url": "https://rstyle.me/+HwFl1y7mOfgjjwFBI3M2jQ",
+      "text": "https://rstyle.me/+HwFl1y7mOfgjjwFBI3..."
+    },
+    {
+      "url": "https://rstyle.me/+HxGQYjY54fJYxEmChJx4bg",
+      "text": "https://rstyle.me/+HxGQYjY54fJYxEmChJ..."
+    },
+    {
+      "url": "https://rstyle.me/+7ylkJ6VNTY6OdDCTUpKOqQ",
+      "text": "https://rstyle.me/+7ylkJ6VNTY6OdDCTUp..."
+    },
+    {
+      "url": "https://rstyle.me/+m1Md57kAKbUbANUmHjt07A",
+      "text": "https://rstyle.me/+m1Md57kAKbUbANUmHj..."
+    },
+    {
+      "url": "https://rstyle.me/+Jvj5uT6dTadI3GbOOPtLUA",
+      "text": "https://rstyle.me/+Jvj5uT6dTadI3GbOOP..."
+    },
+    {
+      "url": "https://rstyle.me/+_Hlh48tBSaNam6atdgrGqQ",
+      "text": "https://rstyle.me/+_Hlh48tBSaNam6atdg..."
+    },
+    {
+      "url": "https://rstyle.me/+1Am04A5VPSs-6heNOB7HtQ",
+      "text": "https://rstyle.me/+1Am04A5VPSs-6heNOB..."
+    },
+    {
+      "url": "https://rstyle.me/+qjPBujHR6KMSgJby3CcSyA",
+      "text": "https://rstyle.me/+qjPBujHR6KMSgJby3C..."
+    },
+    {
+      "url": "https://rstyle.me/+t3bK9VTjKUE5EcC7Ze5k7Q",
+      "text": "https://rstyle.me/+t3bK9VTjKUE5EcC7Ze..."
+    },
+    {
+      "url": "https://rstyle.me/+C9PAqVgpUTYTyNAmH3OSdw",
+      "text": "https://rstyle.me/+C9PAqVgpUTYTyNAmH3..."
+    },
+    {
+      "url": "https://rstyle.me/+mgx7myV2XknXb9Wx7fGZ_w",
+      "text": "https://rstyle.me/+mgx7myV2XknXb9Wx7f..."
+    },
+    {
+      "url": "https://rstyle.me/+1uqIr13bIvVU-wAZmlJ1tQ",
+      "text": "https://rstyle.me/+1uqIr13bIvVU-wAZml..."
+    },
+    {
+      "url": "https://rstyle.me/+aeaKrxopPZq6IrVn6Uao-Q",
+      "text": "https://rstyle.me/+aeaKrxopPZq6IrVn6U..."
+    },
+    {
+      "url": "https://rstyle.me/+xPU6MqEtCSTv0kpe2Ym-NQ",
+      "text": "https://rstyle.me/+xPU6MqEtCSTv0kpe2Y..."
+    },
+    {
+      "url": "https://rstyle.me/+Z8YQU3J6gwmcunejEys5hQ",
+      "text": "https://rstyle.me/+Z8YQU3J6gwmcunejEy..."
+    },
+    {
+      "url": "https://rstyle.me/+E1lD4AQfYlq_fD0EtO_fUQ",
+      "text": "https://rstyle.me/+E1lD4AQfYlq_fD0EtO..."
+    },
+    {
+      "url": "https://rstyle.me/+lScmjDI_0muta21kAqyrIg",
+      "text": "https://rstyle.me/+lScmjDI_0muta21kAq..."
+    },
+    {
+      "url": "https://rstyle.me/+MAHAq6T0Hw4ienNPMA-eqA",
+      "text": "https://rstyle.me/+MAHAq6T0Hw4ienNPMA..."
+    },
+    {
+      "url": "https://rstyle.me/+glcKB_OZ-JhzFvWo5_xVPg",
+      "text": "https://rstyle.me/+glcKB_OZ-JhzFvWo5_..."
+    },
+    {
+      "url": "https://rstyle.me/+JmBh1eBL15cmaT4UAMGxNQ",
+      "text": "https://rstyle.me/+JmBh1eBL15cmaT4UAM..."
+    },
+    {
+      "url": "https://rstyle.me/+L4jHMfOxup78ccLz7-vQIQ",
+      "text": "https://rstyle.me/+L4jHMfOxup78ccLz7-..."
+    },
+    {
+      "url": "https://rstyle.me/+iBuk9WIIvtkjOP48Pvfhug",
+      "text": "https://rstyle.me/+iBuk9WIIvtkjOP48Pv..."
+    },
+    {
+      "url": "https://rstyle.me/+sHOeZAjnfkzenTq2AxKnFQ",
+      "text": "https://rstyle.me/+sHOeZAjnfkzenTq2Ax..."
+    },
+    {
+      "url": "https://rstyle.me/+K_wrU6sv9ADWpt-yD53mIQ",
+      "text": "https://rstyle.me/+K_wrU6sv9ADWpt-yD5..."
+    },
+    {
+      "url": "https://amzn.to/3EgtKkL",
+      "text": "https://amzn.to/3EgtKkL"
+    },
+    {
+      "url": "https://rstyle.me/+t4ezf9hAe2HehanJ_Cwxqg",
+      "text": "https://rstyle.me/+t4ezf9hAe2HehanJ_C..."
+    },
+    {
+      "url": "https://rstyle.me/+g17iXz0NHAfl4wL-yeJ6vw",
+      "text": "https://rstyle.me/+g17iXz0NHAfl4wL-ye..."
+    },
+    {
+      "url": "https://www.youtube.com/channel/UCCDXU_43IIkFb7qJcJei5cw",
+      "text": "   / @mindyminx  "
+    },
+    {
+      "url": "https://www.bonfire.com/store/mindy-minx-store/",
+      "text": "https://www.bonfire.com/store/mindy-m..."
+    },
+    {
+      "url": "https://www.bonfire.com/nevergiveupminx/",
+      "text": "https://www.bonfire.com/nevergiveupminx/"
+    },
+    {
+      "url": "https://analuisa.pxf.io/c/1421990/2760101/17411",
+      "text": "https://analuisa.pxf.io/c/1421990/276..."
+    },
+    {
+      "url": "https://www.youtube.com/hashtag/dayinthelife",
+      "text": "#dayinthelife"
+    },
+    {
+      "url": "https://www.youtube.com/hashtag/lifestyle",
+      "text": "#lifestyle"
+    },
+    {
+      "url": "https://www.youtube.com/hashtag/dailyvlog",
+      "text": "#dailyvlog"
+    }
+  ],
+  "subtitles": null,
+  "order": 0,
+  "commentsTurnedOff": false,
+  "fromYTUrl": "https://www.youtube.com/@MindyMinx/videos",
+  "isMonetized": null,
+  "hashtags": [
+    "#lifestyle",
+    "#dayinthelife",
+    "#dailyvlog"
+  ],
+  "formats": [],
+  "isMembersOnly": false,
+  "input": "https://www.youtube.com/@MindyMinx",
+  "fromChannelListPage": "videos",
+  "isPaidContent": true
+}]

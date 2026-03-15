@@ -1,0 +1,89 @@
+Started: 2026-03-14 at 14:53:02
+Container URL: https://l5dczbl18lp8.runs.apify.net
+Build: 0.0.378 (latest) | Actor version: 0.0 (latest)
+Timeout: 0 seconds
+Memory: 4096 MB
+View on Apify Console: https://console.apify.com/actors/0FXVyOXXEmdGcV88a/runs/OkCep9VspA9Wn5vgR
+
+
+
+Export results: https://console.apify.com/storage/datasets/3l1LPqeCcCDV56Avl
+View on Apify Console: https://console.apify.com/actors/0FXVyOXXEmdGcV88a/runs/OkCep9VspA9Wn5vgR
+[{
+  "id": "7616043278504299806",
+  "text": "#MacBookNeo: in Silver, Citrus, Blush, and Indigo",
+  "textLanguage": "en",
+  "createTime": 1773248286,
+  "createTimeISO": "2026-03-11T16:58:06.000Z",
+  "isAd": true,
+  "authorMeta": {
+    "id": "6809782522139870213",
+    "name": "apple",
+    "profileUrl": "https://www.tiktok.com/@apple",
+    "nickName": "apple",
+    "verified": true,
+    "signature": "",
+    "avatar": "https://p16-common-sign.tiktokcdn-us.com/tos-maliva-avt-0068/7310704398517305349~tplv-tiktokx-cropcenter:720:720.jpeg?dr=9640&refresh_token=9bd0b0ea&x-expires=1773640800&x-signature=c0%2BWuywdSd%2F3ahDRjeliiL9sqDg%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=81f88b70&idc=useast5",
+    "commerceUserInfo": {
+      "commerceUser": true,
+      "downLoadLink": {
+        "ios": "",
+        "android": ""
+      },
+      "category": "Others",
+      "categoryButton": false
+    },
+    "privateAccount": false,
+    "roomId": "",
+    "ttSeller": false,
+    "createTime": 1586972356,
+    "following": 7,
+    "friends": 5,
+    "fans": 7800000,
+    "heart": 32000000,
+    "video": 15,
+    "digg": 0,
+    "originalAvatarUrl": "https://p16-common-sign.tiktokcdn-us.com/tos-maliva-avt-0068/7310704398517305349~tplv-tiktokx-cropcenter:720:720.jpeg?dr=9640&refresh_token=9bd0b0ea&x-expires=1773640800&x-signature=c0%2BWuywdSd%2F3ahDRjeliiL9sqDg%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=81f88b70&idc=useast5"
+  },
+  "musicMeta": {
+    "musicName": "original sound",
+    "musicAuthor": "apple",
+    "musicOriginal": true,
+    "playUrl": "https://v16m.tiktokcdn-us.com/e14290031f634b1f0c75d9958027a0d2/69b55a3d/video/tos/useast8/tos-useast8-v-27dcd7-tx2/oYBAiKy0qiIAAETEfoxPAin2CBPBqME7SgjagA/?a=1233&bti=ODszNWYuMDE6&ch=0&cr=0&dr=0&er=0&lr=default&cd=0%7C0%7C0%7C0&br=250&bt=125&ds=5&ft=GSDrKInz7Thg0a1PXq8Zmo&mime_type=audio_mpeg&qs=13&rc=M2xkO3U5cjtzOTMzaTU8NEBpM2xkO3U5cjtzOTMzaTU8NEBoMzBpMmQ0cmxhLS1kMTJzYSNoMzBpMmQ0cmxhLS1kMTJzcw%3D%3D&vvpl=1&l=20260314065308F2F3C67D56FB971FCB05&btag=e00070000",
+    "coverMediumUrl": "https://p16-common-sign.tiktokcdn-us.com/tos-maliva-avt-0068/7310704398517305349~tplv-tiktokx-cropcenter:720:720.jpeg?dr=9640&refresh_token=9bd0b0ea&x-expires=1773640800&x-signature=c0%2BWuywdSd%2F3ahDRjeliiL9sqDg%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=81f88b70&idc=useast5",
+    "musicId": "7616043268299557663",
+    "originalCoverMediumUrl": "https://p16-common-sign.tiktokcdn-us.com/tos-maliva-avt-0068/7310704398517305349~tplv-tiktokx-cropcenter:720:720.jpeg?dr=9640&refresh_token=9bd0b0ea&x-expires=1773640800&x-signature=c0%2BWuywdSd%2F3ahDRjeliiL9sqDg%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=81f88b70&idc=useast5"
+  },
+  "webVideoUrl": "https://www.tiktok.com/@apple/video/7616043278504299806",
+  "videoMeta": {
+    "height": 1280,
+    "width": 720,
+    "duration": 9,
+    "coverUrl": "https://p16-common-sign.tiktokcdn-us.com/tos-useast8-p-0068-tx2/oY7d8wAwIENnucAEZPpEjDjCsQerV5AfAASFFR~tplv-tiktokx-origin.image?dr=9636&x-expires=1773640800&x-signature=OlMT9NyjqcL3iKsucskwsHNEvMc%3D&t=4d5b0474&ps=13740610&shp=81f88b70&shcp=43f4a2f9&idc=useast5",
+    "definition": "720p",
+    "format": "mp4",
+    "transcriptionLink": null,
+    "originalCoverUrl": "https://p16-common-sign.tiktokcdn-us.com/tos-useast8-p-0068-tx2/oY7d8wAwIENnucAEZPpEjDjCsQerV5AfAASFFR~tplv-tiktokx-origin.image?dr=9636&x-expires=1773640800&x-signature=OlMT9NyjqcL3iKsucskwsHNEvMc%3D&t=4d5b0474&ps=13740610&shp=81f88b70&shcp=43f4a2f9&idc=useast5"
+  },
+  "diggCount": 58900,
+  "shareCount": 2672,
+  "playCount": 1900000,
+  "collectCount": 3416,
+  "commentCount": 2686,
+  "repostCount": 0,
+  "mentions": [],
+  "detailedMentions": [],
+  "hashtags": [
+    {
+      "name": "macbookneo"
+    }
+  ],
+  "effectStickers": [],
+  "isSlideshow": false,
+  "isPinned": false,
+  "isSponsored": false,
+  "mediaUrls": [],
+  "input": "apple",
+  "fromProfileSection": "videos",
+  "commentsDatasetUrl": null
+}]
