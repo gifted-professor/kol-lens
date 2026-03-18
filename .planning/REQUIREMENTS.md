@@ -14,7 +14,7 @@
 
 ### Intake & Scraping
 
-- [ ] **INTK-01**: Operator can upload Excel files with or without headers and have rows routed to TikTok, Instagram, or YouTube correctly
+- [ ] **INTK-01**: Operator can upload the approved canonical creator workbook, get clear validation errors for missing or invalid columns, and have rows routed to TikTok, Instagram, or YouTube deterministically
 - [ ] **INTK-02**: Operator can start, monitor, and cancel scrape jobs from the UI for each supported platform
 - [ ] **INTK-03**: Scrape runs preserve upload metadata and cache behavior consistently across cached, refreshed, and partial-result flows
 - [ ] **INTK-04**: Partial or failed Apify batches show clear operator-facing error summaries without discarding successful results
@@ -31,8 +31,8 @@
 - [ ] **EXPT-01**: Operator can download raw/test/prescreen/image/final review outputs for supported platforms from the UI
 - [ ] **EXPT-02**: Exported files include enough identifiers, reasons, and metadata for manual audit and follow-up
 - [ ] **EXPT-03**: System preserves latest usable scrape snapshots and review JSON artifacts for later re-export or debugging
-- [ ] **OPER-01**: Operator can understand current scrape or visual-review job state, partial-result status, and next available actions directly from the UI
-- [ ] **OPER-02**: Maintainer can trace active field usage and screening logic from docs/config without reverse-engineering the whole codebase
+- [x] **OPER-01**: Operator can understand current scrape or visual-review job state, partial-result status, and next available actions directly from the UI
+- [x] **OPER-02**: Maintainer can trace active field usage and screening logic from docs/config without reverse-engineering the whole codebase
 
 ### Verification & Maintainability
 
@@ -80,8 +80,8 @@
 | EXPT-01 | Phase 4 | Pending |
 | EXPT-02 | Phase 4 | Pending |
 | EXPT-03 | Phase 4 | Pending |
-| OPER-01 | Phase 4 | Pending |
-| OPER-02 | Phase 4 | Pending |
+| OPER-01 | Phase 4 | Complete |
+| OPER-02 | Phase 4 | Complete |
 | QUAL-01 | Phase 5 | Pending |
 | QUAL-02 | Phase 5 | Pending |
 | QUAL-03 | Phase 5 | Pending |
@@ -93,4 +93,4 @@
 
 ---
 *Requirements defined: 2026-03-17*
-*Last updated: 2026-03-17 after initial definition*
+*Last updated: 2026-03-18 after Phase 4 plan 03 completion*

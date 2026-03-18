@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Runtime Hardening** - Remove unsafe runtime assumptions and make local operation deterministic (completed 2026-03-17)
 - [x] **Phase 2: Intake & Scrape Reliability** - Stabilize upload normalization, batch scrape behavior, and operator job control (completed 2026-03-17)
 - [x] **Phase 3: Screening & Visual Review Consistency** - Make prescreen and visual-review outputs consistent across supported platforms (completed 2026-03-17)
-- [ ] **Phase 4: Audit-Ready Outputs** - Improve exports, artifact traceability, and operator clarity during active workflows
+- [x] **Phase 4: Audit-Ready Outputs** - Improve exports, artifact traceability, and operator clarity during active workflows (completed 2026-03-18)
 - [ ] **Phase 5: Verification & Modularization** - Add regression safety and split core monolith hotspots without changing workflow behavior
 - [ ] **Phase 6: Stable Screening RuleSpec Compiler** - Compile brand screening SOP text into deterministic RuleSpec artifacts backed by the field dictionary
 
@@ -82,9 +82,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Unify export row contracts and verify each export path includes the identifiers and metadata operators need
-- [ ] 04-02-PLAN.md — Improve artifact retention and raw/review snapshot reuse for debugging and re-export flows
-- [ ] 04-03-PLAN.md — Refresh UI status copy plus field/rule documentation so operator and maintainer expectations match the code
+- [x] 04-01-PLAN.md — Unify export row contracts and verify each export path includes the identifiers and metadata operators need (completed 2026-03-18)
+- [x] 04-02-PLAN.md — Improve artifact retention and raw/review snapshot reuse for debugging and re-export flows (completed 2026-03-18)
+- [x] 04-03-PLAN.md — Refresh UI status copy plus field/rule documentation so operator and maintainer expectations match the code (completed 2026-03-18)
 
 ### Phase 5: Verification & Modularization
 **Goal**: Maintainers can validate critical workflows quickly and evolve the codebase through smaller modules instead of one-file hotspots.
@@ -110,7 +110,7 @@ Phases execute in numeric order: 1 → 1.1 → 1.2 → 2 → 2.1 → 3 → 4 →
 | 1. Runtime Hardening | 3/3 | Complete   | 2026-03-17 |
 | 2. Intake & Scrape Reliability | 3/3 | Complete   | 2026-03-17 |
 | 3. Screening & Visual Review Consistency | 3/3 | Complete   | 2026-03-17 |
-| 4. Audit-Ready Outputs | 0/3 | Not started | - |
+| 4. Audit-Ready Outputs | 3/3 | Complete   | 2026-03-18 |
 | 5. Verification & Modularization | 0/2 | Not started | - |
 | 6. Stable Screening RuleSpec Compiler | 0/0 | Not started | - |
 
