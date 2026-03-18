@@ -12,11 +12,12 @@ This roadmap treats the current repository as a working but fragile brownfield s
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Runtime Hardening** - Remove unsafe runtime assumptions and make local operation deterministic
-- [ ] **Phase 2: Intake & Scrape Reliability** - Stabilize upload normalization, batch scrape behavior, and operator job control
-- [ ] **Phase 3: Screening & Visual Review Consistency** - Make prescreen and visual-review outputs consistent across supported platforms
+- [x] **Phase 1: Runtime Hardening** - Remove unsafe runtime assumptions and make local operation deterministic (completed 2026-03-17)
+- [x] **Phase 2: Intake & Scrape Reliability** - Stabilize upload normalization, batch scrape behavior, and operator job control (completed 2026-03-17)
+- [x] **Phase 3: Screening & Visual Review Consistency** - Make prescreen and visual-review outputs consistent across supported platforms (completed 2026-03-17)
 - [ ] **Phase 4: Audit-Ready Outputs** - Improve exports, artifact traceability, and operator clarity during active workflows
 - [ ] **Phase 5: Verification & Modularization** - Add regression safety and split core monolith hotspots without changing workflow behavior
+- [ ] **Phase 6: Stable Screening RuleSpec Compiler** - Compile brand screening SOP text into deterministic RuleSpec artifacts backed by the field dictionary
 
 ## Phase Details
 
@@ -32,25 +33,25 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: Audit and remove checked-in secret fallbacks, then document the supported runtime credential paths
-- [ ] 01-02: Add backend runtime/config validation for scrape and vision providers with clear operator-facing failures
-- [ ] 01-03: Tighten local access defaults and verify the frontend can still reach the backend in the supported dev setup
+- [x] 01-01: Audit and remove checked-in secret fallbacks, then document the supported runtime credential paths
+- [x] 01-02: Add backend runtime/config validation for scrape and vision providers with clear operator-facing failures
+- [x] 01-03: Tighten local access defaults and verify the frontend can still reach the backend in the supported dev setup
 
 ### Phase 2: Intake & Scrape Reliability
 **Goal**: Operators can upload source spreadsheets and run scrape jobs with predictable platform routing, partial-result handling, and cancellation behavior.
 **Depends on**: Phase 1
 **Requirements**: [INTK-01, INTK-02, INTK-03, INTK-04]
 **Success Criteria** (what must be TRUE):
-  1. Operator can upload mixed or imperfect spreadsheet inputs and get correct platform routing and metadata capture.
+  1. Operator can upload the approved canonical creator workbook and get deterministic platform routing, metadata capture, and clear validation errors for bad inputs.
   2. Operator can start, monitor, and cancel scrape jobs from the UI for each supported platform.
   3. Cached and force-refresh runs behave predictably and preserve successful results during partial failures.
   4. Batch-level scrape failures show clear summaries without hiding successfully returned profiles.
 **Plans**: 3 plans
 
 Plans:
-- [ ] 02-01: Harden upload parsing and platform-routing logic with sample-file coverage for header/no-header variants
-- [ ] 02-02: Normalize scrape job state, progress payloads, and cancellation behavior across platforms
-- [ ] 02-03: Stabilize Apify batch retry, cache, and partial-result handling so successful data is preserved and surfaced clearly
+- [x] 02-01: Standardize canonical upload workbook validation, metadata normalization, and platform routing (completed 2026-03-17)
+- [x] 02-02: Normalize scrape job state, progress payloads, and cancellation behavior across platforms (completed 2026-03-17)
+- [x] 02-03: Stabilize Apify batch retry, cache, and partial-result handling so successful data is preserved and surfaced clearly (completed 2026-03-17)
 
 ### Phase 3: Screening & Visual Review Consistency
 **Goal**: Operators can trust that prescreen and visual-review decisions are generated consistently and carry the context needed for manual review.
@@ -64,9 +65,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 03-01: Normalize prescreen output contracts across TikTok, Instagram, and YouTube review records
-- [ ] 03-02: Harden cover-candidate, collage, and live visual-review state handling for error cases and partial progress
-- [ ] 03-03: Verify upload-metadata merge paths so active screening rules and exports read the same source of truth
+- [x] 03-01: Normalize prescreen output contracts across TikTok, Instagram, and YouTube review records (completed 2026-03-17)
+- [x] 03-02: Harden cover-candidate, collage, and live visual-review state handling for error cases and partial progress (completed 2026-03-17)
+- [x] 03-03: Verify upload-metadata merge paths so active screening rules and exports read the same source of truth (completed 2026-03-17)
 
 ### Phase 4: Audit-Ready Outputs
 **Goal**: Operators can export trustworthy review artifacts and understand workflow status and follow-up context directly from the tool.
@@ -81,9 +82,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 04-01: Unify export row contracts and verify each export path includes the identifiers and metadata operators need
-- [ ] 04-02: Improve artifact retention and raw/review snapshot reuse for debugging and re-export flows
-- [ ] 04-03: Refresh UI status copy plus field/rule documentation so operator and maintainer expectations match the code
+- [ ] 04-01-PLAN.md — Unify export row contracts and verify each export path includes the identifiers and metadata operators need
+- [ ] 04-02-PLAN.md — Improve artifact retention and raw/review snapshot reuse for debugging and re-export flows
+- [ ] 04-03-PLAN.md — Refresh UI status copy plus field/rule documentation so operator and maintainer expectations match the code
 
 ### Phase 5: Verification & Modularization
 **Goal**: Maintainers can validate critical workflows quickly and evolve the codebase through smaller modules instead of one-file hotspots.
@@ -102,12 +103,23 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 1.1 → 1.2 → 2 → 2.1 → 3 → 4 → 5
+Phases execute in numeric order: 1 → 1.1 → 1.2 → 2 → 2.1 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Runtime Hardening | 0/3 | Not started | - |
-| 2. Intake & Scrape Reliability | 0/3 | Not started | - |
-| 3. Screening & Visual Review Consistency | 0/3 | Not started | - |
+| 1. Runtime Hardening | 3/3 | Complete   | 2026-03-17 |
+| 2. Intake & Scrape Reliability | 3/3 | Complete   | 2026-03-17 |
+| 3. Screening & Visual Review Consistency | 3/3 | Complete   | 2026-03-17 |
 | 4. Audit-Ready Outputs | 0/3 | Not started | - |
 | 5. Verification & Modularization | 0/2 | Not started | - |
+| 6. Stable Screening RuleSpec Compiler | 0/0 | Not started | - |
+
+### Phase 6: Stable Screening RuleSpec Compiler
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 5
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 6 to break down)
