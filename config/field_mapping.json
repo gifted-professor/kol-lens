@@ -1,0 +1,1534 @@
+{
+  "meta": {
+    "version": "2026-03-18",
+    "owner_files": [
+      "backend/app.py",
+      "scripts/data_cleaner.py"
+    ],
+    "sample_data_files": [
+      "data/instagram/instagram_data_last_non_empty.json",
+      "temp/tiktok_data.json",
+      "temp/\u526f\u672ckol_emails_2026-03-16-07-08-05_xz406658@gmail.com.xlsx"
+    ],
+    "scope": [
+      "upload_excel",
+      "instagram_api",
+      "tiktok_api"
+    ],
+    "traceability_surfaces": [
+      "config/field_mapping.json",
+      "docs/field_dictionary.md",
+      "docs/prd/master_vetting_sop.md",
+      "docs/prd/instagram_prd_mapping.md",
+      "docs/prd/tiktok_prd_mapping.md"
+    ],
+    "audit_handoff_exports": [
+      "raw-json",
+      "raw-excel",
+      "test-info",
+      "test-info-json",
+      "prescreen-review",
+      "image-review",
+      "final-review"
+    ],
+    "notes": [
+      "v1 \u53ea\u8986\u76d6\u4e0a\u4f20 Excel \u3001Instagram API \u3001TikTok API\uff0cYouTube \u5b57\u6bb5\u5b57\u5178\u540e\u7eed\u518d\u8865\u3002",
+      "\u201cused_in_active_screening=true\u201d \u8868\u793a\u5f53\u524d\u6279\u91cf\u521d\u7b5b\u4e3b\u94fe\u8def\u4f1a\u771f\u6b63\u8bfb\u53d6\u8be5\u5b57\u6bb5\u3002",
+      "\u201cused_in_any_screening_code=true\u201d \u8868\u793a\u4ee3\u7801\u91cc\u4ecd\u6709\u5907\u7528\u903b\u8f91\u4f1a\u8bfb\u53d6\u8be5\u5b57\u6bb5\uff0c\u4f46\u672a\u5fc5\u662f\u5f53\u524d\u4e3b\u94fe\u8def\u3002",
+      "Phase 4 \u5ba1\u8ba1\u8f93\u51fa\u4ee5\u672c\u6587\u4ef6 + docs/field_dictionary.md + docs/prd/*_mapping.md \u4f5c\u4e3a\u7ef4\u62a4\u7aef\u53ef\u8ffd\u6eaf\u5165\u53e3\uff0c\u4e0d\u65b0\u589e\u64cd\u4f5c\u5458\u5b57\u6bb5\u6d4f\u89c8\u5668\u3002",
+      "final-review \u5bfc\u51fa\u7684\u5c31\u7eea\u6027\u7531 backend artifact \u4fdd\u5b58\u72b6\u6001\u51b3\u5b9a\uff0c\u524d\u7aef\u5bf9\u5e94\u4fe1\u53f7\u4e3a saved_final_review_artifacts_available\u3002"
+    ]
+  },
+  "upload_metadata": {
+    "description": "\u4e0a\u4f20 Excel \u7ecf backend/app.py \u5f52\u4e00\u5316\u540e\u7684\u5143\u6570\u636e\u5b57\u6bb5\u3002Phase 2 \u9ed8\u8ba4\u4e0a\u4f20\u5408\u540c\u5df2\u56fa\u5b9a\u4e3a canonical creator workbook\uff0c\u6700\u5c11\u9700\u8981 `Platform` \u4e0e `@username`\u3002Phase 4 \u8981\u6c42 raw/test/prescreen/image/final \u5bfc\u51fa\u7684\u5b57\u6bb5\u6765\u6e90\u4ecd\u80fd\u4ece\u8fd9\u91cc\u8ffd\u6eaf\u3002",
+    "content_column_candidates": [
+      "content",
+      "url",
+      "profile_url",
+      "profile_link",
+      "link",
+      "URL"
+    ],
+    "fields": {
+      "url": {
+        "type": "string",
+        "source": "upload_excel",
+        "excel_columns": [
+          "URL",
+          "content",
+          "url",
+          "profile_url",
+          "profile_link",
+          "link"
+        ],
+        "description": "\u535a\u4e3b\u4e3b\u9875\u94fe\u63a5\u3002\u82e5\u4e0a\u4f20\u8868\u672a\u63d0\u4f9b URL\uff0c\u540e\u7aef\u4f1a\u57fa\u4e8e `Platform + @username` \u751f\u6210\u7a33\u5b9a\u4e3b\u9875\u5730\u5740\u3002",
+        "example": "https://www.instagram.com/nuritheedoll/",
+        "used_in_active_screening": true,
+        "used_in_any_screening_code": true,
+        "used_by": [
+          "all_platforms.identifier_resolution",
+          "all_platforms.collection_input"
+        ]
+      },
+      "source_filename": {
+        "type": "string",
+        "source": "upload_excel",
+        "excel_columns": [],
+        "description": "\u4e0a\u4f20\u6e90\u6587\u4ef6\u540d\uff0c\u7528\u4e8e raw/test/prescreen/image/final \u5bfc\u51fa\u7684\u6eaf\u6e90\u548c audit handoff \u5bf9\u8d26\u3002",
+        "example": "kol_emails_2026-03-16.xlsx",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "nickname": {
+        "type": "string",
+        "source": "upload_excel",
+        "excel_columns": [
+          "nickname",
+          "name",
+          "display_name"
+        ],
+        "description": "\u535a\u4e3b\u6635\u79f0 / \u5c55\u793a\u540d\u3002",
+        "example": "NURI",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "description": {
+        "type": "string",
+        "source": "upload_excel",
+        "excel_columns": [
+          "Description",
+          "bio"
+        ],
+        "description": "\u4e0a\u4f20\u8868\u81ea\u5e26\u7684\u4eba\u8bbe / \u7b80\u4ecb\u6587\u672c\uff0c\u73b0\u9636\u6bb5\u53ea\u5b58\u6863\uff0c\u672a\u53c2\u4e0e\u521d\u7b5b\u3002",
+        "example": "PR/social: kiwi@stride-social.com",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "handle": {
+        "type": "string",
+        "source": "upload_excel",
+        "excel_columns": [
+          "@username",
+          "username",
+          "handle"
+        ],
+        "description": "\u8d26\u53f7 handle\uff0c\u7528\u4e8e\u4e0e\u91c7\u96c6\u7ed3\u679c\u5339\u914d\u3002",
+        "example": "nuritheedoll",
+        "used_in_active_screening": true,
+        "used_in_any_screening_code": true,
+        "used_by": [
+          "all_platforms.identifier_resolution"
+        ]
+      },
+      "region": {
+        "type": "string",
+        "source": "upload_excel",
+        "excel_columns": [
+          "Region"
+        ],
+        "description": "\u5730\u533a / \u56fd\u5bb6\u7b80\u5199\uff0c\u5f53\u524d Instagram \u4e3b\u94fe\u8def\u4f18\u5148\u4f7f\u7528\u5b83\u8fdb\u884c US/CA \u5224\u65ad\u3002",
+        "example": "US",
+        "used_in_active_screening": true,
+        "used_in_any_screening_code": true,
+        "used_by": [
+          "instagram_custom"
+        ]
+      },
+      "language": {
+        "type": "string",
+        "source": "upload_excel",
+        "excel_columns": [
+          "Language"
+        ],
+        "description": "\u8bed\u8a00\u4ee3\u7801\uff0c\u5f53\u524d Instagram \u4e3b\u94fe\u8def\u4f18\u5148\u7528\u4e8e\u82f1\u8bed\u5224\u65ad\u3002",
+        "example": "en",
+        "used_in_active_screening": true,
+        "used_in_any_screening_code": true,
+        "used_by": [
+          "instagram_custom"
+        ]
+      },
+      "platform": {
+        "type": "string",
+        "source": "upload_excel",
+        "excel_columns": [
+          "Platform"
+        ],
+        "description": "\u5e73\u53f0\u540d\uff0c\u7528\u4e8e\u628a\u884c\u8def\u7531\u5230 Instagram / TikTok / YouTube\uff1b\u5f52\u4e00\u5316\u540e\u4f1a\u4fdd\u5b58\u4e3a\u5c0f\u5199\u5185\u90e8\u503c\u3002",
+        "example": "instagram",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": [
+          "upload_routing"
+        ]
+      },
+      "followers": {
+        "type": "number",
+        "source": "upload_excel",
+        "excel_columns": [
+          "Followers"
+        ],
+        "description": "\u4e0a\u4f20\u8868\u7c89\u4e1d\u6570\uff0c\u5f53\u524d\u4e3b\u94fe\u8def\u672a\u4f7f\u7528\u3002",
+        "example": 45663,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "avg_views": {
+        "type": "number",
+        "source": "upload_excel",
+        "excel_columns": [
+          "Avg. Views"
+        ],
+        "description": "\u4e0a\u4f20\u8868\u5e73\u5747\u64ad\u653e\u91cf\uff0c\u5f53\u524d\u4e3b\u94fe\u8def\u672a\u4f7f\u7528\u3002",
+        "example": 298264,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "avg_likes": {
+        "type": "number",
+        "source": "upload_excel",
+        "excel_columns": [
+          "Avg. Likes"
+        ],
+        "description": "\u4e0a\u4f20\u8868\u5e73\u5747\u70b9\u8d5e\u91cf\uff0c\u5f53\u524d\u4e3b\u94fe\u8def\u672a\u4f7f\u7528\u3002",
+        "example": 5347,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "avg_comments": {
+        "type": "number",
+        "source": "upload_excel",
+        "excel_columns": [
+          "Avg. Comments"
+        ],
+        "description": "\u4e0a\u4f20\u8868\u5e73\u5747\u8bc4\u8bba\u91cf\uff0c\u5f53\u524d\u4e3b\u94fe\u8def\u672a\u4f7f\u7528\u3002",
+        "example": 47,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "avg_collects": {
+        "type": "number",
+        "source": "upload_excel",
+        "excel_columns": [
+          "Avg. Collects"
+        ],
+        "description": "\u4e0a\u4f20\u8868\u5e73\u5747\u6536\u85cf\u91cf\uff0c\u5f53\u524d\u4e3b\u94fe\u8def\u672a\u4f7f\u7528\u3002",
+        "example": 0,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "tags": {
+        "type": "string",
+        "source": "upload_excel",
+        "excel_columns": [
+          "Tags"
+        ],
+        "description": "\u4e0a\u4f20\u8868\u6253\u6807\u5b57\u6bb5\uff0c\u5f53\u524d\u4e3b\u94fe\u8def\u672a\u4f7f\u7528\u3002",
+        "example": "",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "email": {
+        "type": "string",
+        "source": "upload_excel",
+        "excel_columns": [
+          "Email"
+        ],
+        "description": "\u8054\u7cfb\u90ae\u7bb1\uff0c\u53ea\u7528\u4e8e\u8fd0\u8425\u8bb0\u5f55 / \u5bfc\u51fa\u3002",
+        "example": "kiwi@stride-social.com",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "email_send_status": {
+        "type": "string",
+        "source": "upload_excel",
+        "excel_columns": [
+          "Email Send Status"
+        ],
+        "description": "\u90ae\u4ef6\u53d1\u9001\u72b6\u6001\uff0c\u53ea\u8bb0\u5f55\uff0c\u4e0d\u53c2\u4e0e\u521d\u7b5b\u3002",
+        "example": "",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "yt_email_button": {
+        "type": "string",
+        "source": "upload_excel",
+        "excel_columns": [
+          "YT Email Button"
+        ],
+        "description": "YouTube \u90ae\u7bb1\u6309\u94ae\u72b6\u6001\uff0c\u53ea\u8bb0\u5f55\uff0c\u4e0d\u53c2\u4e0e\u521d\u7b5b\u3002",
+        "example": "",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "last_post": {
+        "type": "string",
+        "source": "upload_excel",
+        "excel_columns": [
+          "Last Post"
+        ],
+        "description": "\u4e0a\u4f20\u8868\u6700\u8fd1\u53d1\u5e16\u65e5\u671f\uff0c\u5f53\u524d\u4e3b\u94fe\u8def\u672a\u4f7f\u7528\u3002",
+        "example": "2026-03-15",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "posts_7d": {
+        "type": "number",
+        "source": "upload_excel",
+        "excel_columns": [
+          "Posts (7d)"
+        ],
+        "description": "\u4e0a\u4f20\u8868 7 \u5929\u5185\u53d1\u5e16\u6570\uff0c\u5f53\u524d\u4e3b\u94fe\u8def\u672a\u4f7f\u7528\u3002",
+        "example": 11,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "posts_30d": {
+        "type": "number",
+        "source": "upload_excel",
+        "excel_columns": [
+          "Posts (30d)"
+        ],
+        "description": "\u4e0a\u4f20\u8868 30 \u5929\u5185\u53d1\u5e16\u6570\uff0c\u5f53\u524d\u4e3b\u94fe\u8def\u672a\u4f7f\u7528\u3002",
+        "example": 11,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      }
+    }
+  },
+  "instagram_api": {
+    "description": "Apify instagram-profile-scraper \u8fd4\u56de\u7684\u535a\u4e3b\u5bf9\u8c61\u3002",
+    "profile_fields": {
+      "inputUrl": {
+        "type": "string",
+        "source": "instagram_api",
+        "description": "\u91c7\u96c6\u8f93\u5165\u7684\u539f\u59cb URL\u3002",
+        "example": "https://www.instagram.com/nuritheedoll",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "id": {
+        "type": "string",
+        "source": "instagram_api",
+        "description": "Instagram \u8d26\u53f7 ID\u3002",
+        "example": "12345678901234567",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "username": {
+        "type": "string",
+        "source": "instagram_api",
+        "description": "\u8d26\u53f7 handle\uff0c\u7528\u4e8e\u5408\u5e76\u5ba1\u6838\u7ed3\u679c\u4e0e\u8f93\u51fa\u5c55\u793a\u3002",
+        "example": "nuritheedoll",
+        "used_in_active_screening": true,
+        "used_in_any_screening_code": true,
+        "used_by": [
+          "instagram_custom",
+          "instagram_generic"
+        ]
+      },
+      "url": {
+        "type": "string",
+        "source": "instagram_api",
+        "description": "\u8d26\u53f7\u4e3b\u9875 URL\uff0c\u7528\u4e8e\u4e0e\u4e0a\u4f20\u5143\u6570\u636e\u5408\u5e76\u3002",
+        "example": "https://www.instagram.com/nuritheedoll",
+        "used_in_active_screening": true,
+        "used_in_any_screening_code": true,
+        "used_by": [
+          "instagram_custom",
+          "all_platforms.identifier_resolution"
+        ]
+      },
+      "fullName": {
+        "type": "string",
+        "source": "instagram_api",
+        "description": "\u5168\u540d / \u6635\u79f0\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "Nuri Example",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "biography": {
+        "type": "string",
+        "source": "instagram_api",
+        "description": "\u4e2a\u4eba\u7b80\u4ecb\u6587\u672c\uff1b\u5f53\u524d\u4e3b\u94fe\u8def\u7528\u4e8e\u5730\u533a / \u8bed\u8a00\u515c\u5e95\uff0c\u5907\u7528\u903b\u8f91\u8fd8\u4f1a\u7528\u4e8e\u7981\u8bcd\u68c0\u67e5\u3002",
+        "example": "Los Angeles, CA. Email for collabs.",
+        "used_in_active_screening": true,
+        "used_in_any_screening_code": true,
+        "used_by": [
+          "instagram_custom",
+          "instagram_generic"
+        ]
+      },
+      "externalUrls[].url": {
+        "type": "array<string>",
+        "source": "instagram_api",
+        "description": "\u5916\u94fe URL \u5217\u8868\uff0c\u53ea\u5728\u5907\u7528\u901a\u7528\u903b\u8f91\u4e2d\u7528\u4e8e\u7ade\u54c1 / \u4f4e\u4ef7\u8bcd\u6392\u96f7\u3002",
+        "example": [
+          "https://example.com/shop"
+        ],
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": true,
+        "used_by": [
+          "instagram_generic"
+        ]
+      },
+      "externalUrl": {
+        "type": "string",
+        "source": "instagram_api",
+        "description": "\u4e3b externalUrl \u5b57\u6bb5\uff0c\u5f53\u524d\u672a\u88ab\u521d\u7b5b\u4f7f\u7528\u3002",
+        "example": "https://example.com",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "externalUrlShimmed": {
+        "type": "string",
+        "source": "instagram_api",
+        "description": "Instagram shimmed \u5916\u94fe\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "https://l.instagram.com/?u=https%3A%2F%2Fexample.com",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "followersCount": {
+        "type": "number",
+        "source": "instagram_api",
+        "description": "\u7c89\u4e1d\u6570\uff0c\u65e7\u7248 SOP \u7528\u8fc7\uff0c\u5f53\u524d\u5df2\u79fb\u9664\u3002",
+        "example": 234898,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "followsCount": {
+        "type": "number",
+        "source": "instagram_api",
+        "description": "\u5173\u6ce8\u6570\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": 4021,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "hasChannel": {
+        "type": "boolean",
+        "source": "instagram_api",
+        "description": "\u662f\u5426\u6709 channel\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": false,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "highlightReelCount": {
+        "type": "number",
+        "source": "instagram_api",
+        "description": "\u7cbe\u9009\u96c6\u6570\u91cf\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": 0,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "isBusinessAccount": {
+        "type": "boolean",
+        "source": "instagram_api",
+        "description": "\u662f\u5426\u5546\u4e1a\u8d26\u53f7\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": false,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "businessCategoryName": {
+        "type": "string",
+        "source": "instagram_api",
+        "description": "\u5546\u4e1a\u8d26\u53f7\u5206\u7c7b\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "joinedRecently": {
+        "type": "boolean",
+        "source": "instagram_api",
+        "description": "\u662f\u5426\u8fd1\u671f\u521b\u53f7\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": false,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "private": {
+        "type": "boolean",
+        "source": "instagram_api",
+        "description": "\u662f\u5426\u79c1\u5bc6\u8d26\u53f7\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": false,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "verified": {
+        "type": "boolean",
+        "source": "instagram_api",
+        "description": "\u662f\u5426\u84dd V\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": false,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "profilePicUrl": {
+        "type": "string",
+        "source": "instagram_api",
+        "description": "\u5934\u50cf URL\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "https://scontent.example/avatar.jpg",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "profilePicUrlHD": {
+        "type": "string",
+        "source": "instagram_api",
+        "description": "\u9ad8\u6e05\u5934\u50cf URL\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "https://scontent.example/avatar_hd.jpg",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "igtvVideoCount": {
+        "type": "number",
+        "source": "instagram_api",
+        "description": "IGTV \u6570\u91cf\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": 0,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "relatedProfiles": {
+        "type": "array<object>",
+        "source": "instagram_api",
+        "description": "\u76f8\u5173\u8d26\u53f7\u5217\u8868\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": [],
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "latestIgtvVideos": {
+        "type": "array<object>",
+        "source": "instagram_api",
+        "description": "\u6700\u65b0 IGTV \u5217\u8868\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": [],
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "postsCount": {
+        "type": "number",
+        "source": "instagram_api",
+        "description": "\u603b\u5e16\u5b50\u6570\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": 3246,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "fbid": {
+        "type": "string",
+        "source": "instagram_api",
+        "description": "FBID\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "17841400000000000",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "addressStreet": {
+        "type": "string",
+        "source": "instagram_api",
+        "description": "\u5546\u4e1a\u5730\u5740\u8857\u9053\u4fe1\u606f\uff0c\u53ef\u88ab\u5730\u533a\u8bc6\u522b\u903b\u8f91\u8bfb\u53d6\u3002",
+        "example": "",
+        "used_in_active_screening": true,
+        "used_in_any_screening_code": true,
+        "used_by": [
+          "instagram_custom"
+        ]
+      },
+      "cityName": {
+        "type": "string",
+        "source": "instagram_api",
+        "description": "\u57ce\u5e02\u540d\uff0c\u53ef\u88ab\u5730\u533a\u8bc6\u522b\u903b\u8f91\u8bfb\u53d6\u3002",
+        "example": "",
+        "used_in_active_screening": true,
+        "used_in_any_screening_code": true,
+        "used_by": [
+          "instagram_custom"
+        ]
+      },
+      "location": {
+        "type": "string",
+        "source": "instagram_api",
+        "description": "\u4f4d\u7f6e\u6587\u672c\uff0c\u53ef\u88ab\u5730\u533a\u8bc6\u522b\u903b\u8f91\u8bfb\u53d6\u3002",
+        "example": "",
+        "used_in_active_screening": true,
+        "used_in_any_screening_code": true,
+        "used_by": [
+          "instagram_custom"
+        ]
+      },
+      "businessAddressJson": {
+        "type": "object",
+        "source": "instagram_api",
+        "description": "\u5546\u4e1a\u5730\u5740 JSON\uff0c\u4f1a\u88ab\u62c6\u6210\u6587\u672c\u53c2\u4e0e\u5730\u533a\u8bc6\u522b\u3002",
+        "example": {},
+        "used_in_active_screening": true,
+        "used_in_any_screening_code": true,
+        "used_by": [
+          "instagram_custom"
+        ]
+      }
+    },
+    "post_fields": {
+      "latestPosts[].id": {
+        "type": "string",
+        "source": "instagram_api",
+        "description": "\u5e16\u5b50 ID\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "3846237907589569843",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "latestPosts[].timestamp": {
+        "type": "string",
+        "source": "instagram_api",
+        "description": "\u5e16\u5b50\u53d1\u5e03\u65f6\u95f4\uff0c\u7528\u4e8e 30 \u5929\u6d3b\u8dc3\u5ea6\u5224\u65ad\u3002",
+        "example": "2026-03-05T16:15:00.000Z",
+        "used_in_active_screening": true,
+        "used_in_any_screening_code": true,
+        "used_by": [
+          "instagram_custom",
+          "instagram_generic"
+        ]
+      },
+      "latestPosts[].caption": {
+        "type": "string",
+        "source": "instagram_api",
+        "description": "\u5e16\u5b50\u6587\u6848\uff0c\u5f53\u524d\u4e3b\u94fe\u8def\u7528\u4e8e relationship \u8bcd\u68c0\u6d4b\uff0c\u5907\u7528\u903b\u8f91\u7528\u4e8e\u7981\u8bcd\u68c0\u6d4b\u3002",
+        "example": "Welcome back to Bali...",
+        "used_in_active_screening": true,
+        "used_in_any_screening_code": true,
+        "used_by": [
+          "instagram_custom",
+          "instagram_generic"
+        ]
+      },
+      "latestPosts[].displayUrl": {
+        "type": "string",
+        "source": "instagram_api",
+        "description": "\u5c01\u9762\u56fe URL\uff0c\u4ea4\u7ed9\u89c6\u89c9\u590d\u6838\u3002",
+        "example": "https://scontent.example/post.jpg",
+        "used_in_active_screening": true,
+        "used_in_any_screening_code": true,
+        "used_by": [
+          "instagram_custom",
+          "instagram_generic"
+        ]
+      },
+      "latestPosts[].likesCount": {
+        "type": "number",
+        "source": "instagram_api",
+        "description": "\u70b9\u8d5e\u6570\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": 279,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "latestPosts[].commentsCount": {
+        "type": "number",
+        "source": "instagram_api",
+        "description": "\u8bc4\u8bba\u6570\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": 114,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "latestPosts[].videoViewCount": {
+        "type": "number",
+        "source": "instagram_api",
+        "description": "\u89c6\u9891\u64ad\u653e\u6570\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": 3303,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "latestPosts[].type": {
+        "type": "string",
+        "source": "instagram_api",
+        "description": "\u5e16\u5b50\u7c7b\u578b\uff08Video/Image/Sidecar\uff09\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "Video",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "latestPosts[].hashtags": {
+        "type": "array<object>",
+        "source": "instagram_api",
+        "description": "\u8bdd\u9898\u6807\u7b7e\u5217\u8868\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": [],
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "latestPosts[].mentions": {
+        "type": "array<string>",
+        "source": "instagram_api",
+        "description": "@ \u63d0\u53ca\u5217\u8868\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": [
+          "level8_official"
+        ],
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "latestPosts[].childPosts": {
+        "type": "array<object>",
+        "source": "instagram_api",
+        "description": "\u591a\u5f20\u8d34\u6587\u5b50\u9879\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": [],
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "latestPosts[].images": {
+        "type": "array<object>",
+        "source": "instagram_api",
+        "description": "\u591a\u5f20\u56fe\u5217\u8868\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": [],
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "latestPosts[].alt": {
+        "type": "string",
+        "source": "instagram_api",
+        "description": "\u66ff\u4ee3\u6587\u672c\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "latestPosts[].url": {
+        "type": "string",
+        "source": "instagram_api",
+        "description": "\u5e16\u5b50\u8be6\u60c5 URL\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "https://www.instagram.com/p/ABC123",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "latestPosts[].videoUrl": {
+        "type": "string",
+        "source": "instagram_api",
+        "description": "\u89c6\u9891 URL\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "https://instagram.fvideo.example/video.mp4",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "latestPosts[].ownerId": {
+        "type": "string",
+        "source": "instagram_api",
+        "description": "\u5e16\u5b50 owner id\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "1234567890",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "latestPosts[].ownerUsername": {
+        "type": "string",
+        "source": "instagram_api",
+        "description": "\u5e16\u5b50 owner username\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "nuritheedoll",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "latestPosts[].productType": {
+        "type": "string",
+        "source": "instagram_api",
+        "description": "\u5e16\u5b50 productType\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "clips",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "latestPosts[].shortCode": {
+        "type": "string",
+        "source": "instagram_api",
+        "description": "Instagram shortcode\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "ABC123",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "latestPosts[].dimensionsHeight": {
+        "type": "number",
+        "source": "instagram_api",
+        "description": "\u56fe\u50cf\u9ad8\u5ea6\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": 1350,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "latestPosts[].dimensionsWidth": {
+        "type": "number",
+        "source": "instagram_api",
+        "description": "\u56fe\u50cf\u5bbd\u5ea6\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": 1080,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "latestPosts[].isCommentsDisabled": {
+        "type": "boolean",
+        "source": "instagram_api",
+        "description": "\u662f\u5426\u5173\u95ed\u8bc4\u8bba\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": false,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      }
+    },
+    "screening_flows": {
+      "instagram_custom": {
+        "function": "check_instagram_custom",
+        "status": "active",
+        "summary": "\u5f53\u524d\u6279\u91cf\u4e3b\u94fe\u8def\uff0c\u6838\u5fc3\u662f\u4e0a\u4f20 Region/Language + API \u8d44\u6599\u515c\u5e95 + \u8fd1 100 \u6761 caption \u5173\u7cfb\u8bcd\u62e6\u622a\uff1b\u8f93\u51fa\u7684 profile_reviews + covers \u4f1a\u7ee7\u7eed\u6d41\u5411 prescreen/image/final-review \u5bfc\u51fa\u3002",
+        "reads": [
+          "upload_metadata.url",
+          "upload_metadata.handle",
+          "upload_metadata.region",
+          "upload_metadata.language",
+          "instagram_api.username",
+          "instagram_api.url",
+          "instagram_api.biography",
+          "instagram_api.addressStreet",
+          "instagram_api.cityName",
+          "instagram_api.location",
+          "instagram_api.businessAddressJson",
+          "instagram_api.latestPosts[].timestamp",
+          "instagram_api.latestPosts[].caption",
+          "instagram_api.latestPosts[].displayUrl"
+        ]
+      },
+      "instagram_generic": {
+        "function": "check_instagram",
+        "status": "standby",
+        "summary": "\u5907\u7528\u901a\u7528\u903b\u8f91\uff0c\u5305\u542b externalUrls \u3001biography \u3001caption \u7684\u7ade\u54c1 / \u5f31\u8bed\u4e49\u8bcd\u68c0\u67e5\u3002",
+        "reads": [
+          "instagram_api.externalUrls[].url",
+          "instagram_api.biography",
+          "instagram_api.latestPosts[].timestamp",
+          "instagram_api.latestPosts[].caption",
+          "instagram_api.latestPosts[].displayUrl"
+        ]
+      }
+    }
+  },
+  "tiktok_api": {
+    "description": "Apify TikTok \u722c\u866b\u8fd4\u56de\u7684\u89c6\u9891\u6570\u7ec4\uff0c\u535a\u4e3b\u7ea7\u4fe1\u606f\u91cd\u590d\u5d4c\u5728 authorMeta \u91cc\u3002",
+    "author_fields": {
+      "authorMeta.id": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u4f5c\u8005 ID\u3002",
+        "example": "6896321602818278405",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "authorMeta.name": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u8d26\u53f7 handle\uff0c\u7528\u4e8e\u6309\u535a\u4e3b\u5206\u7ec4\u3002",
+        "example": "trutech",
+        "used_in_active_screening": true,
+        "used_in_any_screening_code": true,
+        "used_by": [
+          "tiktok_tapo",
+          "tiktok_generic",
+          "all_platforms.identifier_resolution"
+        ]
+      },
+      "authorMeta.profileUrl": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u4e3b\u9875 URL\uff0c\u7528\u4e8e\u4e0e\u4e0a\u4f20\u5143\u6570\u636e\u5408\u5e76\u3002",
+        "example": "https://www.tiktok.com/@trutech",
+        "used_in_active_screening": true,
+        "used_in_any_screening_code": true,
+        "used_by": [
+          "tiktok_tapo",
+          "all_platforms.identifier_resolution"
+        ]
+      },
+      "authorMeta.nickName": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u6635\u79f0\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "Trutech | Technology Reviews",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "authorMeta.verified": {
+        "type": "boolean",
+        "source": "tiktok_api",
+        "description": "\u662f\u5426\u8ba4\u8bc1\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": false,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "authorMeta.signature": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u4e2a\u4eba\u7b80\u4ecb\uff0c\u53ea\u5728\u5907\u7528\u901a\u7528 TikTok \u903b\u8f91\u4e2d\u4f5c\u4e3a\u7981\u8bcd\u68c0\u67e5\u6765\u6e90\u3002",
+        "example": "We make tech videos. Shop feed below.",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": true,
+        "used_by": [
+          "tiktok_generic"
+        ]
+      },
+      "authorMeta.bioLink": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u7b80\u4ecb\u5916\u94fe\uff0c\u53ea\u5728\u5907\u7528\u901a\u7528 TikTok \u903b\u8f91\u4e2d\u4f5c\u4e3a\u7ade\u54c1 / \u5f31\u8bed\u4e49\u8bcd\u68c0\u67e5\u6765\u6e90\u3002",
+        "example": "Linktr.ee/trutechco",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": true,
+        "used_by": [
+          "tiktok_generic"
+        ]
+      },
+      "authorMeta.avatar": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u5934\u50cf URL\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "https://p16-common-sign.tiktokcdn-us.com/avatar.jpeg",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "authorMeta.originalAvatarUrl": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u539f\u59cb\u5934\u50cf URL\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "https://p16-common-sign.tiktokcdn-us.com/avatar.jpeg",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "authorMeta.createTime": {
+        "type": "number",
+        "source": "tiktok_api",
+        "description": "\u521b\u53f7\u65f6\u95f4\u6233\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": 1605675126,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "authorMeta.following": {
+        "type": "number",
+        "source": "tiktok_api",
+        "description": "\u5173\u6ce8\u6570\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": 555,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "authorMeta.friends": {
+        "type": "number",
+        "source": "tiktok_api",
+        "description": "\u597d\u53cb\u6570\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": 43,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "authorMeta.fans": {
+        "type": "number",
+        "source": "tiktok_api",
+        "description": "\u7c89\u4e1d\u6570\uff0c\u65e7\u7248 SOP \u53ef\u80fd\u7528\u8fc7\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": 480200,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "authorMeta.heart": {
+        "type": "number",
+        "source": "tiktok_api",
+        "description": "\u603b\u83b7\u8d5e\u6570\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": 18500000,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "authorMeta.video": {
+        "type": "number",
+        "source": "tiktok_api",
+        "description": "\u603b\u89c6\u9891\u6570\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": 736,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "authorMeta.digg": {
+        "type": "number",
+        "source": "tiktok_api",
+        "description": "\u70b9\u8d5e / digg \u6570\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": 0,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "authorMeta.privateAccount": {
+        "type": "boolean",
+        "source": "tiktok_api",
+        "description": "\u662f\u5426\u79c1\u5bc6\u8d26\u53f7\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": false,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "authorMeta.ttSeller": {
+        "type": "boolean",
+        "source": "tiktok_api",
+        "description": "\u662f\u5426 TikTok seller\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": false,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "authorMeta.roomId": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u76f4\u64ad room id\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "authorMeta.commerceUserInfo": {
+        "type": "object",
+        "source": "tiktok_api",
+        "description": "\u5546\u4e1a\u8d26\u53f7\u4fe1\u606f\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": {
+          "commerceUser": false
+        },
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      }
+    },
+    "post_fields": {
+      "id": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u89c6\u9891 ID\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "7614410220470635807",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "input": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u91c7\u96c6\u8f93\u5165\u503c\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "https://www.tiktok.com/@trutech",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "text": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u89c6\u9891\u6587\u6848\uff1b\u5f53\u524d Tapo \u4e3b\u94fe\u8def\u7528\u4e8e\u7f8e\u5986\u6bd4\u4f8b\u5224\u65ad\uff0c\u5907\u7528\u903b\u8f91\u7528\u4e8e\u7981\u8bcd\u68c0\u67e5\u3002",
+        "example": "This mount has 200lbs pull force...",
+        "used_in_active_screening": true,
+        "used_in_any_screening_code": true,
+        "used_by": [
+          "tiktok_tapo",
+          "tiktok_generic"
+        ]
+      },
+      "textLanguage": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u6587\u6848\u8bed\u8a00\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "en",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "createTime": {
+        "type": "number",
+        "source": "tiktok_api",
+        "description": "\u53d1\u5e03\u65f6\u95f4\u6233\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": 1772868047,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "createTimeISO": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u89c6\u9891\u53d1\u5e03\u65f6\u95f4\uff0c\u53ea\u5728\u5907\u7528\u901a\u7528 TikTok \u903b\u8f91\u4e2d\u505a 30 \u5929\u6d3b\u8dc3\u5ea6\u68c0\u67e5\u3002",
+        "example": "2026-03-07T07:20:47.000Z",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": true,
+        "used_by": [
+          "tiktok_generic"
+        ]
+      },
+      "diggCount": {
+        "type": "number",
+        "source": "tiktok_api",
+        "description": "\u70b9\u8d5e\u6570\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": 1173,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "shareCount": {
+        "type": "number",
+        "source": "tiktok_api",
+        "description": "\u5206\u4eab\u6570\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": 41,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "repostCount": {
+        "type": "number",
+        "source": "tiktok_api",
+        "description": "\u8f6c\u53d1\u6570\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": 0,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "playCount": {
+        "type": "number",
+        "source": "tiktok_api",
+        "description": "\u64ad\u653e\u6570\uff0c\u5f53\u524d Tapo \u4e3b\u94fe\u8def\u7528\u4e8e\u6700\u8fd1 50 \u6761\u7684\u5747\u503c + \u4e2d\u4f4d\u6570\u95e8\u69db\u3002",
+        "example": 13600,
+        "used_in_active_screening": true,
+        "used_in_any_screening_code": true,
+        "used_by": [
+          "tiktok_tapo"
+        ]
+      },
+      "collectCount": {
+        "type": "number",
+        "source": "tiktok_api",
+        "description": "\u6536\u85cf\u6570\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": 126,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "commentCount": {
+        "type": "number",
+        "source": "tiktok_api",
+        "description": "\u8bc4\u8bba\u6570\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": 9,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "hashtags[].name": {
+        "type": "array<string>",
+        "source": "tiktok_api",
+        "description": "\u8bdd\u9898\u6807\u7b7e\uff0c\u5f53\u524d Tapo \u4e3b\u94fe\u8def\u7528\u4e8e\u7f8e\u5986\u6bd4\u4f8b\u5224\u65ad\uff0c\u5907\u7528\u903b\u8f91\u7528\u4e8e\u7981\u8bcd\u68c0\u6d4b\u3002",
+        "example": [
+          "parts4star"
+        ],
+        "used_in_active_screening": true,
+        "used_in_any_screening_code": true,
+        "used_by": [
+          "tiktok_tapo",
+          "tiktok_generic"
+        ]
+      },
+      "isAd": {
+        "type": "boolean",
+        "source": "tiktok_api",
+        "description": "\u662f\u5426\u5e7f\u544a\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": false,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "isPinned": {
+        "type": "boolean",
+        "source": "tiktok_api",
+        "description": "\u662f\u5426\u7f6e\u9876\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": false,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "isSponsored": {
+        "type": "boolean",
+        "source": "tiktok_api",
+        "description": "\u662f\u5426 sponsored\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": false,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "isSlideshow": {
+        "type": "boolean",
+        "source": "tiktok_api",
+        "description": "\u662f\u5426\u56fe\u6587\u8f6e\u64ad\uff0c\u5f53\u524d\u4e3b\u94fe\u8def\u7528\u4e8e\u9009\u62e9 slideshow \u5c01\u9762\u6765\u6e90\u3002",
+        "example": false,
+        "used_in_active_screening": true,
+        "used_in_any_screening_code": true,
+        "used_by": [
+          "tiktok_tapo",
+          "tiktok_generic"
+        ]
+      },
+      "fromProfileSection": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u6293\u53d6\u6765\u6e90 section\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "posts",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "commentsDatasetUrl": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u8bc4\u8bba dataset URL\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "https://api.apify.com/v2/datasets/xxx/items",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "webVideoUrl": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u89c6\u9891\u9875 URL\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "https://www.tiktok.com/@trutech/video/7614410220470635807",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "mentions": {
+        "type": "array<object>",
+        "source": "tiktok_api",
+        "description": "@ \u63d0\u53ca\u5217\u8868\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": [],
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "detailedMentions": {
+        "type": "array<object>",
+        "source": "tiktok_api",
+        "description": "\u8be6\u7ec6 mentions \u5217\u8868\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": [],
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "mediaUrls": {
+        "type": "array<string>",
+        "source": "tiktok_api",
+        "description": "\u5a92\u4f53 URL \u5217\u8868\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": [],
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "effectStickers": {
+        "type": "array<object>",
+        "source": "tiktok_api",
+        "description": "\u7279\u6548\u8d34\u7eb8\u5217\u8868\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": [],
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "musicMeta.musicName": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u80cc\u666f\u97f3\u4e50\u540d\u79f0\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "original sound",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "musicMeta.musicAuthor": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u97f3\u4e50\u4f5c\u8005\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "Trutech | Technology Reviews",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "musicMeta.musicOriginal": {
+        "type": "boolean",
+        "source": "tiktok_api",
+        "description": "\u662f\u5426 original sound\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": true,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "musicMeta.playUrl": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u97f3\u4e50 play url\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "https://v16m.tiktokcdn-us.com/audio.mp3",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "musicMeta.coverMediumUrl": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u97f3\u4e50 cover url\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "https://p16-common-sign.tiktokcdn-us.com/cover.jpeg",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "musicMeta.originalCoverMediumUrl": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u97f3\u4e50 original cover url\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "https://p16-common-sign.tiktokcdn-us.com/cover.jpeg",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "musicMeta.musicId": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u97f3\u4e50 ID\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "7614410142720756510",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "videoMeta.height": {
+        "type": "number",
+        "source": "tiktok_api",
+        "description": "\u89c6\u9891\u9ad8\u5ea6\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": 1280,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "videoMeta.width": {
+        "type": "number",
+        "source": "tiktok_api",
+        "description": "\u89c6\u9891\u5bbd\u5ea6\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": 720,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "videoMeta.duration": {
+        "type": "number",
+        "source": "tiktok_api",
+        "description": "\u89c6\u9891\u65f6\u957f\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": 43,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "videoMeta.coverUrl": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u666e\u901a\u5c01\u9762 URL\uff0c\u5f53\u524d\u4e3b\u94fe\u8def\u53ef\u4f5c\u4e3a\u89c6\u89c9\u590d\u6838\u5c01\u9762\u6765\u6e90\u3002",
+        "example": "https://p19-common-sign.tiktokcdn-us.com/cover.image",
+        "used_in_active_screening": true,
+        "used_in_any_screening_code": true,
+        "used_by": [
+          "tiktok_tapo",
+          "tiktok_generic"
+        ]
+      },
+      "videoMeta.originalCoverUrl": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u539f\u59cb\u5c01\u9762 URL\uff0c\u5f53\u524d\u4e3b\u94fe\u8def\u4f18\u5148\u4f7f\u7528\u5b83\u505a\u89c6\u89c9\u590d\u6838\u5c01\u9762\u3002",
+        "example": "https://p19-common-sign.tiktokcdn-us.com/original-cover.image",
+        "used_in_active_screening": true,
+        "used_in_any_screening_code": true,
+        "used_by": [
+          "tiktok_tapo",
+          "tiktok_generic"
+        ]
+      },
+      "videoMeta.definition": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u5206\u8fa8\u7387\u6807\u8bb0\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "720p",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "videoMeta.format": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u5a92\u4f53\u683c\u5f0f\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": "mp4",
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "videoMeta.subtitleLinks[].language": {
+        "type": "array<string>",
+        "source": "tiktok_api",
+        "description": "\u5b57\u5e55\u8bed\u8a00\u5217\u8868\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": [
+          "eng-US"
+        ],
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "videoMeta.subtitleLinks[].downloadLink": {
+        "type": "array<string>",
+        "source": "tiktok_api",
+        "description": "\u5b57\u5e55\u4e0b\u8f7d\u94fe\u63a5\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": [
+          "https://v16m-webapp.tiktokcdn-us.com/subtitle.mp4"
+        ],
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "videoMeta.subtitleLinks[].source": {
+        "type": "array<string>",
+        "source": "tiktok_api",
+        "description": "\u5b57\u5e55\u6765\u6e90\u7c7b\u578b\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": [
+          "ASR"
+        ],
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "videoMeta.subtitleLinks[].sourceUnabbreviated": {
+        "type": "array<string>",
+        "source": "tiktok_api",
+        "description": "\u5b57\u5e55\u6765\u6e90\u5168\u79f0\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": [
+          "automatic speech recognition"
+        ],
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "videoMeta.subtitleLinks[].version": {
+        "type": "array<string>",
+        "source": "tiktok_api",
+        "description": "\u5b57\u5e55\u7248\u672c\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": [
+          "1:big_caption"
+        ],
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "videoMeta.subtitleLinks[].tiktokLink": {
+        "type": "array<string>",
+        "source": "tiktok_api",
+        "description": "\u5b57\u5e55 / \u89c6\u9891\u8d44\u6e90\u94fe\u63a5\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": [
+          "https://v16m-webapp.tiktokcdn-us.com/video.mp4"
+        ],
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "videoMeta.transcriptionLink": {
+        "type": "string",
+        "source": "tiktok_api",
+        "description": "\u8f6c\u5f55\u6587\u672c\u94fe\u63a5\uff0c\u5f53\u524d\u672a\u4f7f\u7528\u3002",
+        "example": null,
+        "used_in_active_screening": false,
+        "used_in_any_screening_code": false,
+        "used_by": []
+      },
+      "slideshowImageLinks[].tiktokLink": {
+        "type": "array<string>",
+        "source": "tiktok_api",
+        "description": "\u56fe\u6587\u8f6e\u64ad\u7684\u9996\u5f20\u56fe\u94fe\u63a5\uff0c\u5f53\u524d\u4e3b\u94fe\u8def\u5728 isSlideshow=true \u65f6\u4f1a\u5f53\u4f5c\u5c01\u9762\u8f93\u51fa\u3002",
+        "example": [
+          "https://p16-sign.tiktokcdn-us.com/slideshow.image"
+        ],
+        "used_in_active_screening": true,
+        "used_in_any_screening_code": true,
+        "used_by": [
+          "tiktok_tapo",
+          "tiktok_generic"
+        ]
+      }
+    },
+    "screening_flows": {
+      "tiktok_tapo": {
+        "function": "check_tiktok_tapo",
+        "status": "active",
+        "summary": "\u5f53\u524d TikTok \u6279\u91cf\u4e3b\u94fe\u8def\uff0c\u6838\u5fc3\u662f\u64ad\u653e\u91cf\u95e8\u69db + \u7f8e\u5986\u5185\u5bb9\u5360\u6bd4 + \u5c01\u9762\u63d0\u53d6\uff1b\u8f93\u51fa\u7684 profile_reviews + covers \u4f1a\u7ee7\u7eed\u6d41\u5411 prescreen/image/final-review \u5bfc\u51fa\u3002",
+        "reads": [
+          "tiktok_api.authorMeta.name",
+          "tiktok_api.authorMeta.profileUrl",
+          "tiktok_api.playCount",
+          "tiktok_api.text",
+          "tiktok_api.hashtags[].name",
+          "tiktok_api.isSlideshow",
+          "tiktok_api.slideshowImageLinks[].tiktokLink",
+          "tiktok_api.videoMeta.originalCoverUrl",
+          "tiktok_api.videoMeta.coverUrl"
+        ]
+      },
+      "tiktok_generic": {
+        "function": "check_tiktok",
+        "status": "standby",
+        "summary": "\u5907\u7528\u901a\u7528\u903b\u8f91\uff0c\u5305\u542b createTimeISO \u6d3b\u8dc3\u5ea6\u3001bioLink \u5916\u94fe\u7981\u8bcd\u3001signature/text/hashtags \u7981\u8bcd\u68c0\u67e5\u3002",
+        "reads": [
+          "tiktok_api.authorMeta.name",
+          "tiktok_api.authorMeta.bioLink",
+          "tiktok_api.authorMeta.signature",
+          "tiktok_api.createTimeISO",
+          "tiktok_api.text",
+          "tiktok_api.hashtags[].name",
+          "tiktok_api.isSlideshow",
+          "tiktok_api.slideshowImageLinks[].tiktokLink",
+          "tiktok_api.videoMeta.originalCoverUrl",
+          "tiktok_api.videoMeta.coverUrl"
+        ]
+      }
+    }
+  }
+}

@@ -1,81 +1,134 @@
-# Ulike 达人初筛核心逻辑规范 (Master Vetting SOP) 
-*此文档为筛选引擎的全局基准，各平台 (TikTok, IG, YouTube) 的具体字段提取需服从此处约定的业务准则。*
+# Ulike 达人初筛核心逻辑规范 (Master Vetting SOP)
+
+> 最后同步：2026-03-18  
+> 本文档用于描述“当前代码里真实生效”的初筛与视觉复核规则。  
+> 对应实现文件：`scripts/data_cleaner.py`、`backend/app.py`
+> 字段总览入口：[`docs/field_dictionary.md`](../field_dictionary.md)（当前 v1 覆盖上传表、Instagram、TikTok）
+> 机器可读源：`config/field_mapping.json`
 
 ---
 
-## 一、品牌调性雷区检查
-### 1. 是否有低客单价品牌合作史
-* **检查位置**：达人近半年发布的视频内容 (首选最近 20~30 条)
-* **检查方法**：观察视频封面文字、标题、口播、Caption
-* **重点排查品牌**：`Temu`, `AliExpress`, `Shein`, `Wish`, `TikTok Shop` 低价商品
-* **如何识别**：封面含 "Temu Haul", "Shein Try On", "$1 TikTok Shop Finds"；内容为低价开箱、大量廉价产品推荐。
-* **判定**：如近半年有明显合作 $\rightarrow$ **Reject**。
+## 维护入口
 
-### 2. 账号内容是否过度商业化 / 假感重
-* **检查位置**：达人主页整体内容风格
-* **判断方式**：
-  1. 视频画面：滤镜过重、磨皮严重、过度摆拍。
-  2. 内容结构：每条都是广告、基本没有真实生活分享。
-* **判定**：极强商业化/假感 $\rightarrow$ **Reject**。
+- 维护者追字段先看 `config/field_mapping.json`，再看生成文档 [`docs/field_dictionary.md`](../field_dictionary.md)。
+- 平台规则入口以 `scripts/data_cleaner.py` 的当前主链路函数为准，不要从旧 PRD 反推。
+- Phase 4 起，导出交接只在现有 raw / test-info / prescreen-review / image-review / final-review 路径上加可追溯性，不新增单独审计 UI。
 
-### 3. 画面环境是否干净
-* **检查位置**：最近 5 条视频的背景环境
-* **不建议情况**：房间杂乱、光线昏暗、画质模糊、环境像仓库。
-* **推荐标准**：家居整洁、明亮、清晰、有生活感。
+## 一、状态定义
+
+当前系统在初筛导出和前端结果中，主要使用以下状态：
+
+| 状态 | 含义 |
+| :--- | :--- |
+| `Pass` | 通过初筛，进入视觉复核 |
+| `Reject` | 在规则层被筛掉 |
+| `Missing` | 输入名单中存在，但采集器未返回该账号数据 |
 
 ---
 
-## 二、达人形象雷区检查
-### 1. 是否有大面积纹身
-* **检查位置**：视频封面（穿短袖/短裤/健身视频）
-* **不建议情况**：大面积纹身、明显花臂、腿部大面积纹身。
-* **依据**：脱毛仪不能用于纹身区域，存在误导风险 $\rightarrow$ **Reject**。
+## 二、通用拒绝原因
 
-### 2. 是否过度性感或暴露
-* **检查位置**：主页视频封面
-* **不建议情况**：大量内衣、比基尼、过度性感姿势、以男粉外貌吸引为主。
-* **推荐标准**：干净、健康、自然精致、积极生活感。
+不同平台口径略有差异，但当前代码里常见的通用拒绝原因包括：
 
-### 3. 怀孕达人
-* **检查位置**：最近视频内容、Caption
-* **排查关键词**：`pregnancy`, `pregnant`, `baby coming`, `expecting`
-* **判定**：处于怀孕阶段 $\rightarrow$ **建议不优先提报 (Reject)**。
+- `未抓取到数据`
+- `采集器未返回该账号数据`
+- `账号没有可用帖子`
+- `近 30 天无更新`
+
+说明：
+
+- 当前代码中的活跃度硬门槛是“最近内容距今超过 30 天直接 Reject”
+- 旧文档里提到的“3 个月无更新”口径，当前实现已不再使用
 
 ---
 
-## 三、宝妈达人筛选规则
-### 1. 满屏晒娃型账号拒绝
-* **检查位置**：最近 15 条视频
-* **不建议情况**：90%以上内容为孩子成长、母婴记录（如 "Day with my baby", "Mom life with toddler"） $\rightarrow$ **Reject**。
+## 三、当前主链路
 
-### 2. 可接受的宝妈类型 (悦己型宝妈)
-* **允许情况**：包含自我护理、身材管理、健身护肤（如 "postpartum self care", "getting my confidence back", "mom glow up"） $\rightarrow$ **可提报**。
+| 平台 | 当前主链路函数 | 说明 |
+| :--- | :--- | :--- |
+| TikTok | `check_tiktok_tapo` | 当前走 Tapo 定制版，不是旧版通用禁词逻辑 |
+| Instagram | `check_instagram_custom` | 当前优先读取上传表的地区/语言字段，再回退 API 资料字段进行美国/加拿大 + 英语判断 |
+| YouTube | `check_youtube` | 当前走通用版文本 / 外链 / 恰饭浓度逻辑 |
 
----
-
-## 四、达人内容垂类检查
-### 1. 优先提报人群 (Priority)
-* **医疗/专业类**：主页含 `Doctor`, `Dermatologist`, `Skin specialist`, `Aesthetic nurse`
-* **运动类达人**：健身、瑜伽、普拉提、高尔夫、滑雪（封面如 `gym training`, `yoga practice`）
-* **职场女性**：简介含 `Lawyer`, `Finance`, `Teacher`, `Entrepreneur`, `Corporate girl`
-* **特定人群**：PCOS、激素问题、皮肤护理长期分享。
-
-### 2. 避免账号类型 (Reject)
-* **娱乐向账号**：全是跳舞、情景短剧、恶搞整蛊，且无产品推荐。
-* **纯美妆测评号**：100%美妆测评，每条都在化妆，毫无生活内容。
+这三条规则才是当前批量初筛真正生效的逻辑，PRD 必须以它们为准。
 
 ---
 
-## 五、账号活跃度检查
-* **判定规则**：
-  1. 当月无发布 $\rightarrow$ 谨慎提报。
-  2. 超过 3个月无发布 $\rightarrow$ **直接 Reject**。
+## 四、Phase 4 导出交接约束
+
+- raw 导出保持 raw 语义：
+  - `/api/download/<platform>/json`
+  - `/api/download/<platform>/excel`
+- 审核交接导出保持 review 语义：
+  - `/api/download/<platform>/test-info`
+  - `/api/download/<platform>/test-info-json`
+  - `/api/download/<platform>/prescreen-review`
+  - `/api/download/<platform>/image-review`
+  - `/api/download/<platform>/final-review`
+- `final-review` 是否可继续导出，不再只看当前前端内存；后端保存的初筛/视觉复核 artifact 通过 `saved_final_review_artifacts_available` 暴露给前端。
+- `source_filename`、`identifier`、`profile_url`、上传表回填字段仍是导出对账时的主溯源锚点。
+
+## 五、平台级初筛规则摘要
+
+### TikTok
+
+当前主链路重点看两件事：
+
+1. 最近 50 条视频的平均播放量和中位数是否都大于 10000
+2. 最近 100 条内容里，美妆关键词命中占比是否超过 50%
+
+通过后提取最近 10 张封面进入视觉复核。
+
+### Instagram
+
+当前主链路重点看四件事：
+
+1. 简介和资料字段里是否能识别出美国 / 加拿大地区线索
+2. 上传表 `Language` 或简介是否显示英语为主
+3. 最近是否有帖子，且最近一条是否在 30 天内
+4. 最近 100 条帖子文案里是否命中 `partner`, `boyfriend`, `girlfriend`, `husband`, `wife`
+
+通过后提取最近 10 张封面进入视觉复核。
+
+### YouTube
+
+当前主链路重点看五件事：
+
+1. 最近一条视频是否在 30 天内
+2. 频道外链和视频描述外链是否命中竞品词
+3. 最近 10 条视频里 `isPaidContent=true` 是否达到 8 条及以上
+4. 频道简介、标题、描述是否命中硬拒关键词
+5. 是否命中弱语义提示词并写入 `soft_flags`
+
+通过后提取最近 9 张封面进入视觉复核。
 
 ---
 
-## 六、执行筛号流程（推荐执行流）
-1. 打开达人主页
-2. 扫描近 20 条视频
-3. 按此顺序检查：
-   `(低品牌合作) -> (风格真实度) -> (画面干净度) -> (纹身判定) -> (性感过度) -> (晒娃比例) -> (垂类匹配度) -> (发布频率)`
-4. **全部通过后才可提报。**
+## 六、视觉复核负责的内容
+
+当前系统把以下判断放在视觉复核阶段，而不是初筛规则层：
+
+1. 画面环境是否整洁、明亮、有生活感
+2. 是否过度商业化、摆拍感或精修感过强
+3. 是否存在大面积纹身
+4. 是否过度性感或暴露
+5. 是否是满屏晒娃型账号
+6. 是否属于优先垂类，如医生、皮肤科、瑜伽、普拉提、职场女性等
+
+也就是说，PRD 中如果提到这些项，需要明确它们属于“视觉复核”，不是“Python 初筛硬规则”。
+
+---
+
+## 七、文档与代码同步要求
+
+后续凡是出现以下变化，必须在同一次提交里同步更新 `docs/prd`：
+
+1. 初筛入口函数切换
+2. 关键词库变化
+3. 活跃度阈值变化
+4. 封面提取数量变化
+5. 地区、语言、恰饭浓度、播放量等阈值变化
+6. 新增大模型二判逻辑
+7. 导出交接路径、artifact 回退语义、或 `saved_final_review_artifacts_available` 这类前后端契约变化
+
+如果 PRD 与代码冲突，视为文档失效，需要立即补齐。
