@@ -16,6 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Intake & Scrape Reliability** - Stabilize upload normalization, batch scrape behavior, and operator job control (completed 2026-03-17)
 - [x] **Phase 3: Screening & Visual Review Consistency** - Make prescreen and visual-review outputs consistent across supported platforms (completed 2026-03-17)
 - [x] **Phase 4: Audit-Ready Outputs** - Improve exports, artifact traceability, and operator clarity during active workflows (completed 2026-03-18)
+- [x] **Phase 04.1: Main Screen Information Architecture Reset (INSERTED)** - Reset the operator main-screen contract, move deprecated or de-scoped surfaces out of the primary flow, and define single-screen versus multi-screen ownership before further UI expansion (completed 2026-03-18)
 - [ ] **Phase 5: Verification & Modularization** - Add regression safety and split core monolith hotspots without changing workflow behavior
 - [ ] **Phase 6: Stable Screening RuleSpec Compiler** - Compile brand screening SOP text into deterministic RuleSpec artifacts backed by the field dictionary
 
@@ -86,14 +87,26 @@ Plans:
 - [x] 04-02-PLAN.md — Improve artifact retention and raw/review snapshot reuse for debugging and re-export flows (completed 2026-03-18)
 - [x] 04-03-PLAN.md — Refresh UI status copy plus field/rule documentation so operator and maintainer expectations match the code (completed 2026-03-18)
 
+### Phase 04.1: Main Screen Information Architecture Reset (INSERTED)
+
+**Goal:** Restore a coherent operator workflow surface by redefining the main-screen contract, moving deprecated or de-scoped modules out of the primary flow, and clarifying single-screen versus multi-screen boundaries before more UI work lands.
+**Requirements**: TBD
+**Depends on:** Phase 4
+**Plans:** 3/3 plans complete
+
+Plans:
+- [x] 04.1-01: Introduce a top-level run/results workspace shell and remove RuleSpec from the default operator stack (completed 2026-03-18)
+- [x] 04.1-02: Split the results workspace into bounded overview / profiles / visual-review / export-handoff ownership tabs (completed 2026-03-18)
+- [x] 04.1-03: Lock the new screen contract into README and SOP verification docs (completed 2026-03-18)
+
 ### Phase 5: Verification & Modularization
 **Goal**: Maintainers can validate critical workflows quickly and evolve the codebase through smaller modules instead of one-file hotspots.
-**Depends on**: Phase 4
+**Depends on**: Phase 04.1
 **Requirements**: [QUAL-01, QUAL-02, QUAL-03]
 **Success Criteria** (what must be TRUE):
   1. Maintainer can run repeatable backend verification for upload, scrape-finalization, and export flows against sample data.
   2. Maintainer can run frontend static checks and vision-review smoke validation before shipping changes.
-  3. Core workflow logic is split into smaller modules while operator-visible behavior remains unchanged.
+  3. Core workflow logic is split into smaller modules while operator-visible behavior remains unchanged inside the Phase 04.1 main-screen boundary.
 **Plans**: 2 plans
 
 Plans:
@@ -103,7 +116,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 1.1 → 1.2 → 2 → 2.1 → 3 → 4 → 5 → 6
+Phases execute in numeric order: 1 → 1.1 → 1.2 → 2 → 2.1 → 3 → 4 → 4.1 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -111,6 +124,7 @@ Phases execute in numeric order: 1 → 1.1 → 1.2 → 2 → 2.1 → 3 → 4 →
 | 2. Intake & Scrape Reliability | 3/3 | Complete   | 2026-03-17 |
 | 3. Screening & Visual Review Consistency | 3/3 | Complete   | 2026-03-17 |
 | 4. Audit-Ready Outputs | 3/3 | Complete   | 2026-03-18 |
+| 4.1. Main Screen Information Architecture Reset | 3/3 | Complete   | 2026-03-18 |
 | 5. Verification & Modularization | 0/2 | Not started | - |
 | 6. Stable Screening RuleSpec Compiler | 0/0 | Not started | - |
 
