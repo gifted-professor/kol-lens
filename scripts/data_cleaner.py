@@ -1,7 +1,24 @@
 import json
 import os
 import re
+import statistics
 from datetime import datetime, timezone
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.path.join(BASE_DIR, 'data')
+VISUAL_REVIEW_COVER_LIMIT = 18
+
+
+def get_profile_reviews_path(platform):
+    return os.path.join(DATA_DIR, platform, f'{platform}_profile_reviews.json')
+
+
+def save_profile_reviews(platform, profile_reviews):
+    path = get_profile_reviews_path(platform)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(profile_reviews, f, indent=2, ensure_ascii=False)
+    return path
 
 # 核心排雷关键词库 (统一转小写进行匹配)
 KILL_KEYWORDS = ['temu', 'shein', 'aliexpress', '$1', 'pregnant', 'baby', 'expecting', 'momlife', 'motherhood']
@@ -12,16 +29,159 @@ YT_HARD_REJECT_EXTERNAL_KEYWORDS = ['temu', 'shein', 'aliexpress', 'wish']
 YT_HARD_REJECT_TEXT_KEYWORDS = ['temu', 'shein', 'aliexpress', 'wish', 'pregnancy', 'pregnant', 'baby coming', 'expecting']
 YT_SOFT_FLAG_TEXT_KEYWORDS = ['$1', 'baby', 'momlife', 'motherhood']
 PRIORITY_KEYWORDS = ['doctor', 'dermatologist', 'yoga', 'pilates', 'aesthetic', 'finance', 'lawyer', 'entrepreneur']
+
+# Tapo (智能家居) 审核常量
+TAPO_RECENT_ACTIVE_DAYS = 30
+TAPO_MIN_AVG_VIEWS = 10000
+TAPO_MIN_MEDIAN_VIEWS = 10000
+
+# Instagram 定制审核常量
+IG_CUSTOM_REGION_KEYWORDS_US = [
+    'usa', 'united states', 'united states of america', 'american',
+    'alabama', 'alaska', 'arizona', 'arkansas', 'california', 'colorado', 'connecticut',
+    'delaware', 'florida', 'georgia', 'hawaii', 'idaho', 'illinois', 'indiana', 'iowa',
+    'kansas', 'kentucky', 'louisiana', 'maine', 'maryland', 'massachusetts', 'michigan',
+    'minnesota', 'mississippi', 'missouri', 'montana', 'nebraska', 'nevada', 'new hampshire',
+    'new jersey', 'new mexico', 'new york', 'north carolina', 'north dakota', 'ohio',
+    'oklahoma', 'oregon', 'pennsylvania', 'rhode island', 'south carolina', 'south dakota',
+    'tennessee', 'texas', 'utah', 'vermont', 'virginia', 'washington', 'west virginia',
+    'wisconsin', 'wyoming', 'district of columbia', 'washington dc', 'washington d.c.',
+    'new york city', 'nyc', 'los angeles', 'san francisco', 'san diego', 'san jose',
+    'orange county', 'bay area', 'miami', 'orlando', 'tampa', 'jacksonville', 'atlanta',
+    'chicago', 'houston', 'dallas', 'austin', 'phoenix', 'seattle', 'boston', 'philadelphia',
+    'las vegas', 'vegas', 'denver', 'nashville', 'charlotte', 'brooklyn', 'manhattan',
+]
+IG_CUSTOM_REGION_REGEX_PATTERNS = [
+    re.compile(r'\bu\.?\s*s\.?\s*a\.?\b'),
+    re.compile(r'\bu\.?\s*n\.?\s*i\.?\s*t\.?\s*e\.?\s*d\.?\s*s\.?\s*t\.?\s*a\.?\s*t\.?\s*e\.?\s*s\.?\b'),
+]
+IG_CUSTOM_UPLOAD_REGION_US = {
+    'us', 'usa', 'united states', 'united states of america',
+}
 REASON_NO_DATA = '未抓取到数据'
 REASON_NO_POSTS = '账号没有可用帖子'
 REASON_INACTIVE = '近 30 天无更新'
 REASON_MISSING_PROFILE = '采集器未返回该账号数据'
 REASON_TOO_MUCH_PAID_CONTENT = '近期付费内容占比过高'
+PROFILE_REVIEW_ALLOWED_STATUSES = {'Pass', 'Reject', 'Missing'}
+
+# 字段维护入口：
+# - 机器可读字段字典：config/field_mapping.json
+# - 可读版字段总览：docs/field_dictionary.md
+# 每次改动主链路读取字段、关键词或阈值时，必须同步更新以上两个文件和对应 PRD。
 
 def normalize_identifier(value):
     if value is None:
         return ''
-    return str(value).strip().lower().lstrip('@')
+    text = str(value).strip().lower()
+    if not text:
+        return ''
+
+    instagram_match = re.search(r'instagram\.com/([^/?#]+)', text, re.IGNORECASE)
+    if instagram_match:
+        return instagram_match.group(1).strip().lower().lstrip('@')
+
+    tiktok_match = re.search(r'tiktok\.com/@([^/?#]+)', text, re.IGNORECASE)
+    if tiktok_match:
+        return tiktok_match.group(1).strip().lower().lstrip('@')
+
+    youtube_patterns = (
+        r'youtube\.com/@([^/?#]+)',
+        r'youtube\.com/channel/([^/?#]+)',
+        r'youtube\.com/c/([^/?#]+)',
+        r'youtube\.com/user/([^/?#]+)',
+    )
+    for pattern in youtube_patterns:
+        youtube_match = re.search(pattern, text, re.IGNORECASE)
+        if youtube_match:
+            return youtube_match.group(1).strip().lower().lstrip('@')
+
+    return text.lstrip('@')
+
+
+def extract_profile_name(platform, value):
+    text = str(value or '').strip()
+    if not text:
+        return ''
+
+    if platform == 'instagram':
+        match = re.search(r'instagram\.com/([^/?#]+)', text, re.IGNORECASE)
+        if match:
+            return match.group(1).strip().lstrip('@')
+    elif platform == 'tiktok':
+        match = re.search(r'tiktok\.com/@([^/?#]+)', text, re.IGNORECASE)
+        if match:
+            return match.group(1).strip().lstrip('@')
+    elif platform == 'youtube':
+        patterns = (
+            r'youtube\.com/@([^/?#]+)',
+            r'youtube\.com/channel/([^/?#]+)',
+            r'youtube\.com/c/([^/?#]+)',
+            r'youtube\.com/user/([^/?#]+)',
+        )
+        for pattern in patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                return match.group(1).strip().lstrip('@')
+
+    return text.lstrip('@')
+
+
+def build_profile_url(platform, profile_name):
+    text = str(profile_name or '').strip()
+    if not text:
+        return ''
+    if re.match(r'^https?://', text, re.IGNORECASE):
+        return text
+
+    identifier = text.lstrip('@')
+    if platform == 'instagram':
+        return f"https://www.instagram.com/{identifier}"
+    if platform == 'tiktok':
+        return f"https://www.tiktok.com/@{identifier}"
+    if platform == 'youtube':
+        lowered = text.lower().lstrip('/')
+        if lowered.startswith(('channel/', 'c/', 'user/')):
+            return f"https://www.youtube.com/{text.lstrip('/')}"
+        if re.match(r'(?i)^uc[\w-]+$', identifier):
+            return f"https://www.youtube.com/channel/{identifier}"
+        return f"https://www.youtube.com/@{identifier}"
+    return text
+
+
+def build_profile_review_record(
+    platform,
+    username='',
+    profile_url='',
+    status='Reject',
+    reason='',
+    covers=None,
+    latest_post_time=None,
+    soft_flags=None,
+    stats=None,
+    upload_metadata=None,
+):
+    normalized_status = status if status in PROFILE_REVIEW_ALLOWED_STATUSES else 'Reject'
+    normalized_covers = []
+    if isinstance(covers, list):
+        normalized_covers = [str(item).strip() for item in covers if str(item or '').strip()]
+
+    normalized_soft_flags = soft_flags if isinstance(soft_flags, list) else []
+    normalized_stats = dict(stats) if isinstance(stats, dict) else {}
+    normalized_upload_metadata = dict(upload_metadata) if isinstance(upload_metadata, dict) else {}
+
+    return {
+        "platform": str(platform or '').strip(),
+        "username": str(username or '').strip(),
+        "profile_url": str(profile_url or '').strip(),
+        "status": normalized_status,
+        "reason": str(reason or '').strip(),
+        "covers": normalized_covers,
+        "latest_post_time": latest_post_time or None,
+        "soft_flags": normalized_soft_flags,
+        "stats": normalized_stats,
+        "upload_metadata": normalized_upload_metadata,
+    }
 
 def parse_iso_datetime(value):
     if not value:
@@ -79,6 +239,87 @@ def clip_text(text, limit=80):
         return cleaned
     return cleaned[:limit - 1] + '…'
 
+
+def normalize_text_for_match(text):
+    return re.sub(r'\s+', ' ', str(text or '').strip().lower())
+
+
+def get_upload_metadata_path(platform):
+    return os.path.join(DATA_DIR, platform, f"{platform}_upload_metadata.json")
+
+
+def load_upload_metadata(platform):
+    path = get_upload_metadata_path(platform)
+    if not os.path.exists(path):
+        return {}
+
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def resolve_upload_metadata(metadata_lookup, *candidates):
+    if not isinstance(metadata_lookup, dict) or not metadata_lookup:
+        return {}
+
+    for candidate in candidates:
+        identifier = normalize_identifier(candidate)
+        if identifier and identifier in metadata_lookup:
+            metadata = metadata_lookup.get(identifier)
+            if isinstance(metadata, dict):
+                return metadata
+    return {}
+
+
+def iter_text_values(value):
+    if value is None:
+        return
+    if isinstance(value, str):
+        cleaned = value.strip()
+        if cleaned:
+            yield cleaned
+        return
+    if isinstance(value, (int, float)):
+        yield str(value)
+        return
+    if isinstance(value, dict):
+        for nested in value.values():
+            yield from iter_text_values(nested)
+        return
+    if isinstance(value, list):
+        for nested in value:
+            yield from iter_text_values(nested)
+
+
+def build_instagram_region_text(profile):
+    fields = [
+        profile.get('biography'),
+        profile.get('addressStreet'),
+        profile.get('cityName'),
+        profile.get('location'),
+        profile.get('businessAddressJson'),
+    ]
+    parts = []
+    for field in fields:
+        parts.extend(iter_text_values(field))
+    return normalize_text_for_match(' '.join(parts))
+
+
+def has_instagram_us_region(profile, upload_metadata=None):
+    upload_region = normalize_text_for_match((upload_metadata or {}).get('region'))
+    if upload_region:
+        return upload_region in IG_CUSTOM_UPLOAD_REGION_US
+
+    region_text = build_instagram_region_text(profile)
+    if not region_text:
+        return False
+    if any(keyword in region_text for keyword in IG_CUSTOM_REGION_KEYWORDS_US):
+        return True
+    return any(pattern.search(region_text) for pattern in IG_CUSTOM_REGION_REGEX_PATTERNS)
+
 def build_toxic_reason(scope, source_label, keyword, text=None):
     parts = [f'{scope}命中禁词 "{keyword}"']
     if source_label:
@@ -132,6 +373,12 @@ def find_first_toxic_source(sources, scope):
         return build_toxic_reason(scope, hit.get("source"), hit.get("keyword"), hit.get("snippet"))
     return None
 
+
+# 备用通用 TikTok 流程读取字段：
+# - authorMeta.name / authorMeta.bioLink / authorMeta.signature
+# - createTimeISO
+# - text / hashtags[].name
+# - isSlideshow / slideshowImageLinks[].tiktokLink / videoMeta.originalCoverUrl / videoMeta.coverUrl
 def check_tiktok(data):
     """TikTok 第一道防线物理筛查"""
     if not data or len(data) == 0: return {"status": "Reject", "reason": REASON_NO_DATA}
@@ -173,9 +420,9 @@ def check_tiktok(data):
     if toxic_reason:
         return {"status": "Reject", "reason": toxic_reason, "latest_post_time": create_time_str}
 
-    # 5. 提取前9条视觉封面的链接
+    # 5. 提取最近最多 18 条视觉封面的链接
     cover_urls = []
-    for item in sorted_items[:9]:
+    for item in sorted_items[:VISUAL_REVIEW_COVER_LIMIT]:
         if item.get('isSlideshow'):
             try: cover_urls.append(item['slideshowImageLinks'][0]['tiktokLink'])
             except: pass
@@ -191,10 +438,84 @@ def check_tiktok(data):
         "reason": build_pass_reason('tiktok', create_time_str, len(filtered_covers))
     }
 
+def check_tiktok_tapo(data):
+    """TikTok Tapo 智能家居品牌定制审核逻辑"""
+    if not data or len(data) == 0:
+        return {"status": "Reject", "reason": REASON_NO_DATA}
+
+    # 当前主链路读取字段：
+    # - createTimeISO（30 天活跃度）
+    # - playCount（最近 50 条，均值 + 中位数）
+    # - isSlideshow / slideshowImageLinks[].tiktokLink / videoMeta.originalCoverUrl / videoMeta.coverUrl（封面提取）
+    sorted_items = sort_items_by_latest(data, 'createTimeISO')
+    first_item = sorted_items[0]
+    create_time_str = first_item.get('createTimeISO')
+
+    # 步骤2 — 活跃度：最近一条内容需在 30 天内
+    if create_time_str:
+        try:
+            create_time = datetime.fromisoformat(create_time_str.replace('Z', '+00:00'))
+            now = datetime.now(timezone.utc)
+            if (now - create_time).days > TAPO_RECENT_ACTIVE_DAYS:
+                return {"status": "Reject", "reason": REASON_INACTIVE, "latest_post_time": create_time_str}
+        except Exception:
+            pass
+
+    # 步骤2 — 播放量门槛：前50条视频的平均值和中位数均需 > 10,000
+    top_items = sorted_items[:50]
+    play_counts = [item.get('playCount', 0) or 0 for item in top_items]
+    avg_views = statistics.mean(play_counts) if play_counts else 0
+    median_views = statistics.median(play_counts) if play_counts else 0
+
+    if avg_views <= TAPO_MIN_AVG_VIEWS or median_views <= TAPO_MIN_MEDIAN_VIEWS:
+        return {
+            "status": "Reject",
+            "reason": f"播放量不达标（均值 {avg_views:.0f}，中位数 {median_views:.0f}，门槛 {TAPO_MIN_AVG_VIEWS}）",
+            "latest_post_time": create_time_str,
+            "stats": {
+                "avg_views": round(avg_views, 1),
+                "median_views": round(median_views, 1),
+                "video_count": len(play_counts),
+            },
+        }
+
+    # 通过 — 提取最近最多 18 张封面供视觉复核
+    cover_urls = []
+    for item in sorted_items[:VISUAL_REVIEW_COVER_LIMIT]:
+        if item.get('isSlideshow'):
+            try:
+                cover_urls.append(item['slideshowImageLinks'][0]['tiktokLink'])
+            except Exception:
+                pass
+        else:
+            vm = item.get('videoMeta', {})
+            cover_urls.append(vm.get('originalCoverUrl') or vm.get('coverUrl'))
+
+    filtered_covers = [c for c in cover_urls if c]
+    return {
+        "status": "Pass",
+        "covers": filtered_covers,
+        "latest_post_time": create_time_str,
+        "reason": (
+            f"近 {TAPO_RECENT_ACTIVE_DAYS} 天有更新；"
+            f"播放量达标（均值 {avg_views:.0f}，中位数 {median_views:.0f}）；"
+            f"已提取 {len(filtered_covers)} 张封面供视觉复核"
+        ),
+        "stats": {
+            "avg_views": round(avg_views, 1),
+            "median_views": round(median_views, 1),
+            "video_count": len(play_counts),
+        },
+    }
+
 def check_instagram(data):
     """Instagram 第一道防线物理筛查"""
     if not data or len(data) == 0: return {"status": "Reject", "reason": REASON_NO_DATA}
     
+    # 备用通用 Instagram 流程读取字段：
+    # - externalUrls[].url
+    # - biography
+    # - latestPosts[].timestamp / latestPosts[].caption / latestPosts[].displayUrl
     # Apify IG data is often a list with one dict or just the dict
     profile = data[0] if isinstance(data, list) else data
     
@@ -239,13 +560,66 @@ def check_instagram(data):
     soft_flag_hits = collect_keyword_hits(text_sources, IG_SOFT_FLAG_TEXT_KEYWORDS)
         
     # 5. 提取视觉封面
-    cover_urls = [p.get('displayUrl') for p in sorted_posts[:9] if p.get('displayUrl')]
+    cover_urls = [p.get('displayUrl') for p in sorted_posts[:VISUAL_REVIEW_COVER_LIMIT] if p.get('displayUrl')]
     return {
         "status": "Pass",
         "covers": cover_urls,
         "soft_flags": soft_flag_hits,
         "latest_post_time": timestamp_str,
         "reason": build_pass_reason('instagram', timestamp_str, len(cover_urls), len(soft_flag_hits))
+    }
+
+def check_instagram_custom(data, upload_metadata=None):
+    """Instagram 定制审核逻辑（美国本土 + 30 天活跃；视觉与排除项交给视觉复核）"""
+    if not data or len(data) == 0:
+        return {"status": "Reject", "reason": REASON_NO_DATA}
+
+    # 当前主链路读取字段：
+    # - 上传元数据：url / handle / region
+    # - API 主页：username / url / biography / addressStreet / cityName / location / businessAddressJson
+    # - API 帖子：latestPosts[].timestamp / latestPosts[].displayUrl
+    profile = data[0] if isinstance(data, list) else data
+
+    # 步骤1 — 基础资质：地区要求仅保留美国
+    profile_has_us = has_instagram_us_region(profile, upload_metadata=upload_metadata)
+    upload_region = normalize_text_for_match((upload_metadata or {}).get('region'))
+
+    if not profile_has_us:
+        return {
+            "status": "Reject",
+            "reason": (
+                "上传表 Region 未命中美国"
+                if upload_region
+                else "简介或资料字段未识别到美国地区线索"
+            ),
+        }
+
+    posts = profile.get('latestPosts', [])
+    if not posts:
+        return {"status": "Reject", "reason": REASON_NO_POSTS}
+    sorted_posts = sort_items_by_latest(posts, 'timestamp')
+
+    # 活跃度门槛
+    timestamp_str = sorted_posts[0].get('timestamp')
+    if timestamp_str:
+        try:
+            post_time = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+            now = datetime.now(timezone.utc)
+            if (now - post_time).days > TAPO_RECENT_ACTIVE_DAYS:
+                return {"status": "Reject", "reason": REASON_INACTIVE}
+        except Exception:
+            pass
+
+    # 提取最近最多 18 张封面供视觉复核（步骤3/4 视觉部分交给视觉模型）
+    cover_urls = [p.get('displayUrl') for p in sorted_posts[:VISUAL_REVIEW_COVER_LIMIT] if p.get('displayUrl')]
+    return {
+        "status": "Pass",
+        "covers": cover_urls,
+        "latest_post_time": timestamp_str,
+        "reason": (
+            f"地区符合（美国）；近 {TAPO_RECENT_ACTIVE_DAYS} 天有更新；"
+            f"已提取 {len(cover_urls)} 张封面供视觉复核"
+        ),
     }
 
 def check_youtube(data):
@@ -313,7 +687,7 @@ def check_youtube(data):
     soft_flag_hits = collect_keyword_hits(text_sources, YT_SOFT_FLAG_TEXT_KEYWORDS)
         
     # 4. 提取视觉封面
-    cover_urls = [vid.get('thumbnailUrl') for vid in sorted_items[:9] if vid.get('thumbnailUrl')]
+    cover_urls = [vid.get('thumbnailUrl') for vid in sorted_items[:VISUAL_REVIEW_COVER_LIMIT] if vid.get('thumbnailUrl')]
     return {
         "status": "Pass",
         "covers": cover_urls,
@@ -353,8 +727,11 @@ def filter_and_save_dataset(file_path, platform, expected_profiles=None):
         passed_profile_count = 0
         expected_profiles = expected_profiles or []
         expected_profile_keys = {normalize_identifier(item) for item in expected_profiles if normalize_identifier(item)}
+        upload_metadata_lookup = load_upload_metadata(platform)
         
         if platform == 'tiktok':
+            # 分组与回填阶段还会读取 authorMeta.name / authorMeta.profileUrl，
+            # 用于把原始视频数组聚合为“按博主维度”的初筛结果。
             profiles = {}
             for item in data:
                 author = item.get('authorMeta', {}).get('name', 'unknown')
@@ -363,48 +740,57 @@ def filter_and_save_dataset(file_path, platform, expected_profiles=None):
             original_profile_count = len(profiles)
 
             for author, items in profiles.items():
-                res = check_tiktok(items)
+                profile_url = items[0].get('authorMeta', {}).get('profileUrl')
+                upload_metadata = resolve_upload_metadata(upload_metadata_lookup, profile_url, author)
+                res = check_tiktok_tapo(items)
                 profile_url = items[0].get('authorMeta', {}).get('profileUrl')
                 latest_post_time = res.get("latest_post_time")
-                returned_profiles.append(author)
+                returned_profiles.append(profile_url or author)
                 if res['status'] == 'Pass':
                     items[0]['_vetting'] = res
                     filtered_data.extend(items)
                     passed_profile_count += 1
-                    profile_reviews.append({
-                        "username": author,
-                        "profile_url": profile_url,
-                        "status": "Pass",
-                        "reason": res.get("reason"),
-                        "covers": res.get("covers", []),
-                        "latest_post_time": latest_post_time
-                    })
+                    profile_reviews.append(build_profile_review_record(
+                        platform,
+                        username=author,
+                        profile_url=profile_url,
+                        status='Pass',
+                        reason=res.get("reason"),
+                        covers=res.get("covers", []),
+                        latest_post_time=latest_post_time,
+                        stats=res.get("stats"),
+                        upload_metadata=upload_metadata,
+                    ))
                 else:
                     rejected_profiles.append({"username": author, "profile_url": profile_url, "reason": res['reason']})
-                    profile_reviews.append({
-                        "username": author,
-                        "profile_url": profile_url,
-                        "status": "Reject",
-                        "reason": res['reason'],
-                        "covers": [],
-                        "latest_post_time": latest_post_time
-                    })
+                    profile_reviews.append(build_profile_review_record(
+                        platform,
+                        username=author,
+                        profile_url=profile_url,
+                        status='Reject',
+                        reason=res['reason'],
+                        latest_post_time=latest_post_time,
+                        stats=res.get("stats"),
+                        upload_metadata=upload_metadata,
+                    ))
 
-            returned_profile_keys = {normalize_identifier(author) for author in returned_profiles}
+            returned_profile_keys = {normalize_identifier(item) for item in returned_profiles if normalize_identifier(item)}
             missing_profile_keys = expected_profile_keys - returned_profile_keys
             for profile in expected_profiles:
                 normalized = normalize_identifier(profile)
                 if normalized not in missing_profile_keys:
                     continue
-                profile_url = f"https://www.tiktok.com/@{str(profile).lstrip('@')}" if normalized else None
-                missing_item = {
-                    "username": str(profile).lstrip('@'),
-                    "profile_url": profile_url,
-                    "status": "Missing",
-                    "reason": REASON_MISSING_PROFILE,
-                    "covers": [],
-                    "latest_post_time": None
-                }
+                profile_name = extract_profile_name('tiktok', profile)
+                profile_url = build_profile_url('tiktok', profile_name)
+                upload_metadata = resolve_upload_metadata(upload_metadata_lookup, profile_url, profile_name, profile)
+                missing_item = build_profile_review_record(
+                    platform,
+                    username=profile_name or str(profile).lstrip('@'),
+                    profile_url=profile_url,
+                    status='Missing',
+                    reason=REASON_MISSING_PROFILE,
+                    upload_metadata=upload_metadata,
+                )
                 missing_profiles.append(missing_item)
                 rejected_profiles.append({
                     "username": missing_item["username"],
@@ -414,35 +800,66 @@ def filter_and_save_dataset(file_path, platform, expected_profiles=None):
                 profile_reviews.append(missing_item)
                     
         elif platform == 'instagram':
+            # Instagram 直接按 profile 对象逐条跑主链路，再把 upload_metadata 融合进 profile_reviews。
             original_profile_count = len(data)
             for profile in data:
                 username = profile.get('username', 'unknown')
                 profile_url = profile.get('url') or (f"https://www.instagram.com/{username}" if username != 'unknown' else None)
-                res = check_instagram(profile)
+                upload_metadata = resolve_upload_metadata(upload_metadata_lookup, profile_url, username)
+                returned_profiles.append(profile_url or username)
+                res = check_instagram_custom(profile, upload_metadata=upload_metadata)
                 if res['status'] == 'Pass':
                     profile['_vetting'] = res
                     filtered_data.append(profile)
                     passed_profile_count += 1
-                    profile_reviews.append({
-                        "username": username,
-                        "profile_url": profile_url,
-                        "status": "Pass",
-                        "reason": res.get("reason"),
-                        "covers": res.get("covers", []),
-                        "latest_post_time": res.get("latest_post_time"),
-                        "soft_flags": res.get("soft_flags", [])
-                    })
+                    profile_reviews.append(build_profile_review_record(
+                        platform,
+                        username=username,
+                        profile_url=profile_url,
+                        status='Pass',
+                        reason=res.get("reason"),
+                        covers=res.get("covers", []),
+                        latest_post_time=res.get("latest_post_time"),
+                        soft_flags=res.get("soft_flags", []),
+                        upload_metadata=upload_metadata,
+                    ))
                 else:
                     rejected_profiles.append({"username": username, "profile_url": profile_url, "reason": res['reason']})
-                    profile_reviews.append({
-                        "username": username,
-                        "profile_url": profile_url,
-                        "status": "Reject",
-                        "reason": res['reason'],
-                        "covers": [],
-                        "latest_post_time": res.get("latest_post_time"),
-                        "soft_flags": res.get("soft_flags", [])
-                    })
+                    profile_reviews.append(build_profile_review_record(
+                        platform,
+                        username=username,
+                        profile_url=profile_url,
+                        status='Reject',
+                        reason=res['reason'],
+                        latest_post_time=res.get("latest_post_time"),
+                        soft_flags=res.get("soft_flags", []),
+                        upload_metadata=upload_metadata,
+                    ))
+
+            returned_profile_keys = {normalize_identifier(item) for item in returned_profiles if normalize_identifier(item)}
+            missing_profile_keys = expected_profile_keys - returned_profile_keys
+            for profile in expected_profiles:
+                normalized = normalize_identifier(profile)
+                if normalized not in missing_profile_keys:
+                    continue
+                profile_name = extract_profile_name('instagram', profile)
+                profile_url = build_profile_url('instagram', profile_name)
+                upload_metadata = resolve_upload_metadata(upload_metadata_lookup, profile_url, profile_name, profile)
+                missing_item = build_profile_review_record(
+                    platform,
+                    username=profile_name or str(profile).lstrip('@'),
+                    profile_url=profile_url,
+                    status='Missing',
+                    reason=REASON_MISSING_PROFILE,
+                    upload_metadata=upload_metadata,
+                )
+                missing_profiles.append(missing_item)
+                rejected_profiles.append({
+                    "username": missing_item["username"],
+                    "profile_url": profile_url,
+                    "reason": missing_item["reason"]
+                })
+                profile_reviews.append(missing_item)
                     
         elif platform == 'youtube':
             profiles = {}
@@ -453,41 +870,73 @@ def filter_and_save_dataset(file_path, platform, expected_profiles=None):
             original_profile_count = len(profiles)
                 
             for channel, items in profiles.items():
-                res = check_youtube(items)
                 first_item = items[0] if items else {}
                 profile_url = first_item.get('channelUrl') or first_item.get('channelLink')
                 if not profile_url:
                     about_info = first_item.get('aboutChannelInfo', {})
                     profile_url = about_info.get('channelUrl')
+                upload_metadata = resolve_upload_metadata(upload_metadata_lookup, profile_url, channel)
+                res = check_youtube(items)
+                returned_profiles.append(profile_url or channel)
                 if res['status'] == 'Pass':
                     items[0]['_vetting'] = res
                     filtered_data.extend(items)
                     passed_profile_count += 1
-                    profile_reviews.append({
-                        "username": channel,
-                        "profile_url": profile_url,
-                        "status": "Pass",
-                        "reason": res.get("reason"),
-                        "covers": res.get("covers", []),
-                        "latest_post_time": res.get("latest_post_time"),
-                        "soft_flags": res.get("soft_flags", [])
-                    })
+                    profile_reviews.append(build_profile_review_record(
+                        platform,
+                        username=channel,
+                        profile_url=profile_url,
+                        status='Pass',
+                        reason=res.get("reason"),
+                        covers=res.get("covers", []),
+                        latest_post_time=res.get("latest_post_time"),
+                        soft_flags=res.get("soft_flags", []),
+                        upload_metadata=upload_metadata,
+                    ))
                 else:
                     rejected_profiles.append({"username": channel, "profile_url": profile_url, "reason": res['reason']})
-                    profile_reviews.append({
-                        "username": channel,
-                        "profile_url": profile_url,
-                        "status": "Reject",
-                        "reason": res['reason'],
-                        "covers": [],
-                        "latest_post_time": res.get("latest_post_time"),
-                        "soft_flags": res.get("soft_flags", [])
-                    })
+                    profile_reviews.append(build_profile_review_record(
+                        platform,
+                        username=channel,
+                        profile_url=profile_url,
+                        status='Reject',
+                        reason=res['reason'],
+                        latest_post_time=res.get("latest_post_time"),
+                        soft_flags=res.get("soft_flags", []),
+                        upload_metadata=upload_metadata,
+                    ))
+
+            returned_profile_keys = {normalize_identifier(item) for item in returned_profiles if normalize_identifier(item)}
+            missing_profile_keys = expected_profile_keys - returned_profile_keys
+            for profile in expected_profiles:
+                normalized = normalize_identifier(profile)
+                if normalized not in missing_profile_keys:
+                    continue
+                profile_name = extract_profile_name('youtube', profile)
+                profile_url = build_profile_url('youtube', profile_name or profile)
+                upload_metadata = resolve_upload_metadata(upload_metadata_lookup, profile_url, profile_name, profile)
+                missing_item = build_profile_review_record(
+                    platform,
+                    username=profile_name or str(profile).lstrip('@'),
+                    profile_url=profile_url,
+                    status='Missing',
+                    reason=REASON_MISSING_PROFILE,
+                    upload_metadata=upload_metadata,
+                )
+                missing_profiles.append(missing_item)
+                rejected_profiles.append({
+                    "username": missing_item["username"],
+                    "profile_url": profile_url,
+                    "reason": missing_item["reason"]
+                })
+                profile_reviews.append(missing_item)
         else:
             return {"success": False, "error": "未知平台"}
             
         with open(file_path, 'w') as f:
             json.dump(filtered_data, f, indent=2)
+
+        profile_reviews_path = save_profile_reviews(platform, profile_reviews)
             
         print(f"[{platform.upper()}] 初筛完成：通过 {len(filtered_data)} 条，筛掉 {len(rejected_profiles)} 个账号。")
         return {
@@ -500,7 +949,8 @@ def filter_and_save_dataset(file_path, platform, expected_profiles=None):
             "missing_profiles": missing_profiles,
             "rejected_profiles_count": len(rejected_profiles),
             "rejected_profiles": rejected_profiles,
-            "profile_reviews": profile_reviews
+            "profile_reviews": profile_reviews,
+            "profile_reviews_path": profile_reviews_path,
         }
     except Exception as e:
         import traceback

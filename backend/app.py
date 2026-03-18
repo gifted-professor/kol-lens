@@ -3,6 +3,7 @@ from flask_cors import CORS
 import base64
 import copy
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+import hashlib
 from io import BytesIO
 import json
 import math
@@ -150,17 +151,26 @@ APIFY_TRANSIENT_STATUS_CODES = (429, 500, 502, 503, 504)
 APIFY_MIN_WAIT_SECONDS = 180
 APIFY_MAX_WAIT_SECONDS = 900
 APIFY_COMMAND_TIMEOUT_SECONDS = 900
+APIFY_BUDGET_RESERVATION_TTL_SECONDS = int(os.getenv("APIFY_BUDGET_RESERVATION_TTL_SECONDS", "21600"))
+APIFY_RUN_GUARD_TTL_SECONDS = int(os.getenv("APIFY_RUN_GUARD_TTL_SECONDS", "1800"))
 APIFY_AUTH_FILE = os.path.expanduser("~/.apify/auth.json")
 APIFY_TOKEN_STATE_FILE = os.path.expanduser("~/.apify/token_manager_state.json")
 APIFY_SOFT_CREDIT_LIMIT_USD = float(os.getenv("APIFY_SOFT_CREDIT_LIMIT_USD", "4.0"))
+APIFY_BUDGET_SAFETY_MULTIPLIER = float(os.getenv("APIFY_BUDGET_SAFETY_MULTIPLIER", "1.1"))
+APIFY_BUDGET_BUFFER_USD = float(os.getenv("APIFY_BUDGET_BUFFER_USD", "0.1"))
 APIFY_MAX_BATCH_ATTEMPTS = int(os.getenv("APIFY_MAX_BATCH_ATTEMPTS", "3"))
 APIFY_ESTIMATED_COST_PER_IDENTIFIER_USD = {
     "tiktok": float(os.getenv("APIFY_TIKTOK_COST_PER_PROFILE_USD", "0.04")),
     "instagram": float(os.getenv("APIFY_INSTAGRAM_COST_PER_PROFILE_USD", "0.08")),
     "youtube": float(os.getenv("APIFY_YOUTUBE_COST_PER_PROFILE_USD", "0.50")),
 }
+APIFY_ESTIMATED_COST_PER_RESULT_USD = {
+    "tiktok": float(os.getenv("APIFY_TIKTOK_COST_PER_RESULT_USD", "0.004")),
+    "instagram": float(os.getenv("APIFY_INSTAGRAM_COST_PER_RESULT_USD", "0.0027")),
+    "youtube": float(os.getenv("APIFY_YOUTUBE_COST_PER_RESULT_USD", "0.004")),
+}
 APIFY_MAX_IDENTIFIERS_PER_BATCH = {
-    "tiktok": int(os.getenv("TIKTOK_BATCH_SIZE", "100")),
+    "tiktok": int(os.getenv("TIKTOK_BATCH_SIZE", "20")),
     "instagram": int(os.getenv("INSTAGRAM_BATCH_SIZE", "50")),
     "youtube": int(os.getenv("YOUTUBE_BATCH_SIZE", "5")),
 }
@@ -193,47 +203,23 @@ VISION_PROMPT_TAPO = """你是 Tapo 智能家居品牌达人初筛流程中的�
 
 只根据图片画面做初步判断，不要假设看不到的内容。
 
-步骤2 — 场景匹配：检查是否命中以下至少 1 类场景：
-- 室内亲子：有孩子在家庭室内环境中的画面
-- 手持产品：博主手持或展示智能家居/电子产品
+步骤3 — 内容 / 视觉审核：检查是否命中以下至少 1 类特征：
+- Speaking-led：镜头前开口说话，有明显表达感
+- 真实生活场景：真实家庭 / 生活环境，非绿幕、非强剧本感
+- 孩子互动：有孩子在家庭或生活场景中的互动
+- 产品展示：手持、摆放或明确展示产品
 - 户外庭院：庭院、花园、露台等户外家居场景
-- 宠物互动：有宠物出现在家庭环境中
+- 宠物互动：有宠物出现在生活场景中并形成互动
 
-如果以上 4 类场景均未命中，输出 Reject，reason 写"未命中家庭/宠物/户外场景"。
+如果以上 6 类特征均未命中，输出 Reject，reason 写"未命中 Speaking-led/真实生活场景/孩子互动/产品展示/户外庭院/宠物互动"。
 
-步骤3 视觉部分 — 排除项：如果自拍/情侣内容占比 >= 70% 且画面中无产品、无宠物、无孩子，输出 Reject，reason 写"自拍/情侣内容占比过高，缺乏产品与生活场景"。
+步骤4 — 排除项审核：
+1. 若明显出现绿幕、抠图感虚拟背景或大面积纯色虚拟背景，输出 Reject，reason 写"出现绿幕背景"。
+2. 若多人跳舞 / 舞蹈表演内容占比 > 30%，输出 Reject，reason 写"多人跳舞内容占比过高"。
+3. 若自拍或情侣两人出镜内容占比 > 70%，输出 Reject，reason 写"自拍/情侣出镜占比过高"。
 
-如果通过以上检查，输出 Pass。
-
-如果同时命中多项风险，不要只写一项：
-- `reason` 写一句主结论。
-- `signals` 尽量列出所有已识别到的命中项，最多 3 个，宁可短一点，也不要漏掉明显命中项。
-- `signals` 只写风险点，不要重复空话。
-
-请只返回 JSON，不要加 markdown，不要加额外说明，格式固定为：
-{"decision":"Pass 或 Reject","reason":"一句中文原因","signals":["最多 3 个简短中文信号"]}"""
-
-VISION_PROMPT_INSTAGRAM_CUSTOM = """你是 Instagram 达人初筛流程中的视觉复核员。输入图片是一位博主最近最多 18 张封面，按时间顺序拆成最多 2 张 3x3 九宫格。请综合全部输入图片一起判断。
-
-只根据图片画面做初步判断，不要假设看不到的内容。
-
-【步骤2：内容风格审核】
-查看封面，判断是否出现以下至少 1 类特征：
-A. 多人出镜对话（街访、朋友互动、陌生人交流等）
-B. Speaking-led（镜头前开口说话，有表达能力，可以看到博主在说话的画面）
-C. 真实生活场景（非绿幕、非剧本感情景剧，真实的生活环境）
-D. 有鲜明人设或垂直 niche（运动、校园、约会、健身、美食等明确的内容定位）
-
-如果以上 4 类特征均未命中，输出 Reject，reason 写"未命中多人互动/Speaking/真实生活场景/垂直人设"。
-
-【步骤3：受众与互动审核】
-若封面中人物多为中老年（目测 50 岁以上占比 > 50%），输出 Reject，reason 写"人物多为中老年，不符合目标受众"。
-
-【步骤4：排除项审核】
-1. 若多人跳舞内容（多人一起跳舞、舞蹈表演）占比 > 30%，输出 Reject，reason 写"多人跳舞内容占比过高"。
-2. 若封面人物多为黑人（占比 > 70%），输出 Reject，reason 写"人物种族不符合目标受众"。
-3. 若 solo 单人 POV 内容（只有一个人出镜、无互动、无第二人、自拍视角）占比 > 50%，输出 Reject，reason 写"单人 POV 内容占比过高，缺乏互动"。
-4. 若出现明显的绿幕背景（纯色背景、虚拟背景、抠图感），输出 Reject，reason 写"出现绿幕背景"。
+不要根据年龄、种族、民族等受保护属性做判断。
+不要把鲜明人设 / 垂直 niche 当作自动通过或自动拒绝条件；这属于人工判断项。
 
 如果通过以上检查，输出 Pass。
 
@@ -244,11 +230,13 @@ D. 有鲜明人设或垂直 niche（运动、校园、约会、健身、美食�
 
 请只返回 JSON，不要加 markdown，不要加额外说明，格式固定为：
 {"decision":"Pass 或 Reject","reason":"一句中文原因","signals":["最多 3 个简短中文信号"]}"""
+VISION_PROMPT_INSTAGRAM_CUSTOM = VISION_PROMPT_TAPO
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
 if not os.path.exists(DATA_DIR):
     os.makedirs(DATA_DIR)
 
+APIFY_RUN_GUARD_STATE_FILE = os.path.join(DATA_DIR, "apify_run_guard_state.json")
 VISION_PROVIDER_STATE_FILE = os.path.join(DATA_DIR, "vision_provider_state.json")
 
 UPLOAD_FOLDER = os.path.join(DATA_DIR, 'uploads')
@@ -258,6 +246,8 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 JOBS = {}
 JOBS_LOCK = threading.Lock()
+APIFY_TOKEN_STATE_LOCK = threading.RLock()
+APIFY_RUN_GUARD_LOCK = threading.RLock()
 VISUAL_PREVIEW_CACHE = {}
 VISUAL_PREVIEW_CACHE_LOCK = threading.Lock()
 MAX_VISUAL_PREVIEW_CACHE_ITEMS = 256
@@ -340,6 +330,7 @@ UPLOAD_PLATFORM_ALIASES = {
     "yt": "youtube",
 }
 JOB_TERMINAL_STATUSES = {"completed", "failed", "cancelled"}
+JOB_ACTIVE_STATUSES = {"queued", "running", "cancelling"}
 JOB_CANCELLATION_REQUESTED_STATUSES = {"cancelling", "cancelled"}
 SCRAPE_JOB_CONTRACT_VERSION = "scrape_job_v1"
 SCRAPE_STAGE_ALIASES = {
@@ -350,6 +341,8 @@ SCRAPE_STAGE_ALIASES = {
     "scraping": "provider_start",
     "apify_start": "provider_start",
     "apify_running": "provider_running",
+    "recovering_remote_run": "recovering_remote_run",
+    "waiting_remote_run": "waiting_remote_run",
     "downloading": "downloading",
     "filtering": "filtering",
     "batch_completed": "batch_completed",
@@ -366,6 +359,8 @@ SCRAPE_STAGE_PROGRESS_MAP = {
     "batch_preparing": {"done": 8, "total": 100, "percent": 8},
     "provider_start": {"done": 18, "total": 100, "percent": 18},
     "provider_running": {"done": 45, "total": 100, "percent": 45},
+    "recovering_remote_run": {"done": 55, "total": 100, "percent": 55},
+    "waiting_remote_run": {"done": 60, "total": 100, "percent": 60},
     "downloading": {"done": 72, "total": 100, "percent": 72},
     "filtering": {"done": 90, "total": 100, "percent": 90},
     "batch_completed": {"done": 94, "total": 100, "percent": 94},
@@ -379,6 +374,8 @@ SCRAPE_BATCH_STAGE_FRACTIONS = {
     "batch_preparing": 0.08,
     "provider_start": 0.18,
     "provider_running": 0.45,
+    "recovering_remote_run": 0.55,
+    "waiting_remote_run": 0.6,
     "downloading": 0.72,
     "filtering": 0.9,
     "batch_completed": 1,
@@ -629,12 +626,68 @@ def build_rulespec_compile_output_dir():
     return os.path.join(repo_root, "temp", "compiled_rulespec", f"api-{timestamp}-{uuid.uuid4().hex[:8]}")
 
 
-def create_job(job_type, platform=None, message="任务已创建"):
+def normalize_job_payload_for_signature(value):
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        if math.isnan(value):
+            return None
+        if value.is_integer():
+            return int(value)
+        return round(value, 6)
+    if isinstance(value, str):
+        return value.strip()
+    if isinstance(value, list):
+        return [normalize_job_payload_for_signature(item) for item in value]
+    if isinstance(value, dict):
+        return {
+            str(key): normalize_job_payload_for_signature(item)
+            for key, item in sorted(value.items(), key=lambda pair: str(pair[0]))
+        }
+    return str(value)
+
+
+def build_job_payload_signature(job_type, platform=None, payload=None):
+    canonical_payload = {
+        "type": str(job_type or "").strip().lower(),
+        "platform": str(platform or "").strip().lower(),
+        "payload": normalize_job_payload_for_signature(payload or {}),
+    }
+    raw = json.dumps(canonical_payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def find_active_job(job_type=None, platform=None, payload_signature=None):
+    target_type = str(job_type or "").strip().lower()
+    target_platform = str(platform or "").strip().lower()
+    target_signature = str(payload_signature or "").strip()
+
+    with JOBS_LOCK:
+        for job in JOBS.values():
+            status = str(job.get("status") or "").strip().lower()
+            if status not in JOB_ACTIVE_STATUSES:
+                continue
+            if target_type and str(job.get("type") or "").strip().lower() != target_type:
+                continue
+            if target_platform and str(job.get("platform") or "").strip().lower() != target_platform:
+                continue
+            if target_signature and str(job.get("payload_signature") or "").strip() != target_signature:
+                continue
+            return dict(job)
+    return None
+
+
+def create_job(job_type, platform=None, message="任务已创建", payload_signature=None):
     job_id = str(uuid.uuid4())
     job = {
         "id": job_id,
         "type": job_type,
         "platform": platform,
+        "payload_signature": str(payload_signature or "").strip() or None,
         "status": "queued",
         "stage": "queued",
         "message": message,
@@ -3242,6 +3295,21 @@ def build_audit_export_row_base(
     return append_upload_metadata_to_export_row(row, context["export_item"]), context
 
 
+def append_runtime_stats_to_export_row(row, review_item):
+    stats = {}
+    if isinstance(review_item, dict) and isinstance(review_item.get("stats"), dict):
+        stats = review_item.get("stats") or {}
+
+    for export_key, stats_key in (
+        ("runtime_avg_views", "avg_views"),
+        ("runtime_median_views", "median_views"),
+        ("runtime_video_count", "video_count"),
+    ):
+        value = stats.get(stats_key)
+        row[export_key] = value if value not in (None, "") else ""
+    return row
+
+
 def build_image_review_rows(platform, profile_reviews, artifact_metadata=None):
     rows = []
     metadata_lookup = load_upload_metadata(platform)
@@ -3254,6 +3322,7 @@ def build_image_review_rows(platform, profile_reviews, artifact_metadata=None):
             metadata_lookup=metadata_lookup,
         )
         review_item = context["review_item"]
+        append_runtime_stats_to_export_row(row, review_item)
         row.update({
             'status': review_item.get('status'),
             'reason': review_item.get('reason'),
@@ -3283,6 +3352,7 @@ def build_prescreen_review_rows(platform, profile_reviews, artifact_metadata=Non
             metadata_lookup=metadata_lookup,
         )
         review_item = context["review_item"]
+        append_runtime_stats_to_export_row(row, review_item)
         row.update({
             'status': review_item.get('status'),
             'stage_status': get_review_stage_label(review_item.get('status'), review_item.get('reason')),
@@ -3365,6 +3435,7 @@ def build_final_review_rows(platform, profile_reviews, visual_results, artifact_
             metadata_lookup=metadata_lookup,
             include_account_id=True,
         )
+        append_runtime_stats_to_export_row(row, review_item)
         row.update({
             'prescreen_status': prescreen_status,
             'prescreen_reason': prescreen_reason,
@@ -3965,13 +4036,14 @@ def filter_unscraped(platform, identifiers, days_limit=7):
     return needed
 
 def get_apify_token():
-    env_tokens = get_apify_env_tokens()
-    if env_tokens:
+    pool = get_apify_token_pool()
+    if pool:
+        pool_tokens = [item.get("token") for item in pool if item.get("token")]
         state = load_apify_token_state()
         current_token = str(state.get("current_token") or "").strip()
-        if current_token in env_tokens:
+        if current_token in pool_tokens:
             return current_token
-        return env_tokens[0]
+        return pool_tokens[0]
     return get_apify_auth_file_token()
 
 
@@ -3983,27 +4055,179 @@ def mask_apify_token(token):
 
 def load_apify_token_state():
     try:
-        if not os.path.exists(APIFY_TOKEN_STATE_FILE):
-            return {"tokens": {}}
-        with open(APIFY_TOKEN_STATE_FILE, 'r') as f:
-            data = json.load(f)
-        if not isinstance(data, dict):
-            return {"tokens": {}}
-        if not isinstance(data.get("tokens"), dict):
-            data["tokens"] = {}
-        return data
+        with APIFY_TOKEN_STATE_LOCK:
+            if not os.path.exists(APIFY_TOKEN_STATE_FILE):
+                return {"tokens": {}, "budget_reservations": {}}
+            with open(APIFY_TOKEN_STATE_FILE, 'r') as f:
+                data = json.load(f)
+            if not isinstance(data, dict):
+                return {"tokens": {}, "budget_reservations": {}}
+            if not isinstance(data.get("tokens"), dict):
+                data["tokens"] = {}
+            if not isinstance(data.get("budget_reservations"), dict):
+                data["budget_reservations"] = {}
+            return data
     except Exception:
-        return {"tokens": {}}
+        return {"tokens": {}, "budget_reservations": {}}
 
 
 def save_apify_token_state(state):
     try:
-        os.makedirs(os.path.dirname(APIFY_TOKEN_STATE_FILE), exist_ok=True)
-        with open(APIFY_TOKEN_STATE_FILE, 'w') as f:
-            json.dump(state, f, indent=2)
-        return True
+        with APIFY_TOKEN_STATE_LOCK:
+            os.makedirs(os.path.dirname(APIFY_TOKEN_STATE_FILE), exist_ok=True)
+            payload = dict(state or {})
+            if not isinstance(payload.get("tokens"), dict):
+                payload["tokens"] = {}
+            if not isinstance(payload.get("budget_reservations"), dict):
+                payload["budget_reservations"] = {}
+            with open(APIFY_TOKEN_STATE_FILE, 'w') as f:
+                json.dump(payload, f, indent=2)
+            return True
     except Exception:
         return False
+
+
+def load_apify_run_guard_state():
+    try:
+        with APIFY_RUN_GUARD_LOCK:
+            if not os.path.exists(APIFY_RUN_GUARD_STATE_FILE):
+                return {"guards": {}}
+            with open(APIFY_RUN_GUARD_STATE_FILE, "r") as f:
+                data = json.load(f)
+            if not isinstance(data, dict):
+                return {"guards": {}}
+            if not isinstance(data.get("guards"), dict):
+                data["guards"] = {}
+            return data
+    except Exception:
+        return {"guards": {}}
+
+
+def save_apify_run_guard_state(state):
+    try:
+        with APIFY_RUN_GUARD_LOCK:
+            os.makedirs(os.path.dirname(APIFY_RUN_GUARD_STATE_FILE), exist_ok=True)
+            payload = dict(state or {})
+            if not isinstance(payload.get("guards"), dict):
+                payload["guards"] = {}
+            with open(APIFY_RUN_GUARD_STATE_FILE, "w") as f:
+                json.dump(payload, f, indent=2)
+            return True
+    except Exception:
+        return False
+
+
+def prune_apify_run_guards(state):
+    guards = state.setdefault("guards", {})
+    now_ts = time.time()
+    stale_keys = []
+    for guard_key, guard in guards.items():
+        if not isinstance(guard, dict):
+            stale_keys.append(guard_key)
+            continue
+        expires_at_ts = float(guard.get("expires_at_ts") or 0.0)
+        if expires_at_ts and expires_at_ts <= now_ts:
+            stale_keys.append(guard_key)
+
+    for guard_key in stale_keys:
+        guards.pop(guard_key, None)
+
+    return stale_keys
+
+
+def build_apify_run_guard_key(actor_id, output_filename, input_data):
+    canonical_payload = {
+        "actor_id": str(actor_id or "").strip(),
+        "platform": str(output_filename or "").strip().lower(),
+        "input": normalize_job_payload_for_signature(input_data or {}),
+    }
+    raw = json.dumps(canonical_payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def get_apify_run_guard(guard_key):
+    cleaned_key = str(guard_key or "").strip()
+    if not cleaned_key:
+        return None
+
+    with APIFY_RUN_GUARD_LOCK:
+        state = load_apify_run_guard_state()
+        prune_apify_run_guards(state)
+        guard = state.get("guards", {}).get(cleaned_key)
+        save_apify_run_guard_state(state)
+        return dict(guard) if isinstance(guard, dict) else None
+
+
+def remember_apify_run_guard(
+    guard_key,
+    *,
+    actor_id,
+    output_filename,
+    input_data,
+    reason,
+    token=None,
+    run_id=None,
+    dataset_id=None,
+    status=None,
+):
+    cleaned_key = str(guard_key or "").strip()
+    if not cleaned_key:
+        return None
+
+    guard = {
+        "key": cleaned_key,
+        "actor_id": str(actor_id or "").strip(),
+        "platform": str(output_filename or "").strip().lower(),
+        "input_identifiers": list(get_scrape_identifiers(output_filename, input_data) or []),
+        "token": str(token or "").strip() or None,
+        "token_masked": mask_apify_token(token),
+        "run_id": str(run_id or "").strip() or None,
+        "dataset_id": str(dataset_id or "").strip() or None,
+        "status": str(status or "").strip() or None,
+        "reason": str(reason or "").strip(),
+        "created_at": iso_now(),
+        "expires_at_ts": time.time() + APIFY_RUN_GUARD_TTL_SECONDS,
+    }
+
+    with APIFY_RUN_GUARD_LOCK:
+        state = load_apify_run_guard_state()
+        prune_apify_run_guards(state)
+        state.setdefault("guards", {})[cleaned_key] = guard
+        save_apify_run_guard_state(state)
+
+    return guard
+
+
+def clear_apify_run_guard(guard_key):
+    cleaned_key = str(guard_key or "").strip()
+    if not cleaned_key:
+        return None
+
+    with APIFY_RUN_GUARD_LOCK:
+        state = load_apify_run_guard_state()
+        guards = state.setdefault("guards", {})
+        removed = guards.pop(cleaned_key, None)
+        prune_apify_run_guards(state)
+        save_apify_run_guard_state(state)
+        return removed
+
+
+def build_apify_run_guard_message(guard):
+    if not isinstance(guard, dict):
+        return "同一批次存在待人工确认的 Apify 提交记录，为避免重复扣费，系统已阻止自动再次提交。"
+
+    run_id = str(guard.get("run_id") or "").strip()
+    reason = str(guard.get("reason") or "").strip()
+    if run_id:
+        return (
+            f"同一批次已有待人工确认的 Apify run（run_id: {run_id}）。"
+            f"上次记录原因：{reason or '状态不确定'}。"
+            f"为避免重复扣费，系统暂时阻止再次自动提交。"
+        )
+    return (
+        f"同一批次上次提交状态不确定：{reason or '未拿到可确认的提交结果'}。"
+        f"为避免重复扣费，系统暂时阻止再次自动提交。"
+    )
 
 
 def get_apify_env_tokens():
@@ -4030,23 +4254,20 @@ def get_apify_env_tokens():
     return deduped
 
 
-def get_apify_token_candidates():
-    candidates = []
-    env_tokens = get_apify_env_tokens()
-    if env_tokens:
-        candidates.extend(env_tokens)
-    else:
-        current_token = get_apify_token()
-        if current_token:
-            candidates.append(current_token)
+def split_apify_token_list(raw_value):
+    tokens = []
+    if raw_value is None:
+        return tokens
 
-    state = load_apify_token_state()
-    if not env_tokens:
-        for token in (state.get("tokens") or {}).keys():
-            cleaned = str(token or "").strip()
-            if cleaned:
-                candidates.append(cleaned)
+    for token in str(raw_value).split(","):
+        cleaned = token.strip()
+        if cleaned:
+            tokens.append(cleaned)
+    return tokens
 
+
+def get_apify_free_env_tokens():
+    candidates = split_apify_token_list(os.getenv("APIFY_FREE_TOKENS"))
     deduped = []
     seen = set()
     for token in candidates:
@@ -4055,6 +4276,101 @@ def get_apify_token_candidates():
         seen.add(token)
         deduped.append(token)
     return deduped
+
+
+def get_apify_token_pool_strategy():
+    strategy = str(os.getenv("APIFY_TOKEN_POOL_STRATEGY") or "paid_first_free_fallback").strip()
+    if not strategy:
+        return "paid_first_free_fallback"
+    return strategy
+
+
+def get_apify_free_token_hard_limit_usd():
+    hard_limit = safe_positive_float(os.getenv("APIFY_FREE_TOKEN_HARD_LIMIT_USD"), 5.0)
+    if hard_limit <= 0:
+        return 5.0
+    return round(hard_limit, 6)
+
+
+def build_apify_token_descriptor(token, tier="paid", priority=0, hard_limit_usd=None):
+    cleaned_token = str(token or "").strip()
+    if not cleaned_token:
+        return None
+
+    cleaned_tier = "free" if str(tier or "").strip().lower() == "free" else "paid"
+    descriptor = {
+        "token": cleaned_token,
+        "tier": cleaned_tier,
+        "priority": int(priority or 0),
+        "hard_limit_usd": None,
+        "masked": mask_apify_token(cleaned_token),
+    }
+    if cleaned_tier == "free":
+        descriptor["hard_limit_usd"] = get_apify_free_token_hard_limit_usd() if hard_limit_usd is None else round(
+            safe_positive_float(hard_limit_usd, get_apify_free_token_hard_limit_usd()),
+            6,
+        )
+    return descriptor
+
+
+def get_apify_token_pool():
+    strategy = get_apify_token_pool_strategy()
+    if strategy != "paid_first_free_fallback":
+        strategy = "paid_first_free_fallback"
+
+    descriptors = []
+    seen = set()
+
+    def add_descriptor(token, tier, priority, hard_limit_usd=None):
+        descriptor = build_apify_token_descriptor(
+            token,
+            tier=tier,
+            priority=priority,
+            hard_limit_usd=hard_limit_usd,
+        )
+        if not descriptor:
+            return
+        cleaned_token = descriptor["token"]
+        if cleaned_token in seen:
+            return
+        seen.add(cleaned_token)
+        descriptors.append(descriptor)
+
+    paid_tokens = get_apify_env_tokens()
+    free_tokens = get_apify_free_env_tokens()
+    priority = 0
+
+    for token in paid_tokens:
+        add_descriptor(token, "paid", priority)
+        priority += 1
+
+    if not paid_tokens and not free_tokens:
+        auth_token = get_apify_auth_file_token()
+        add_descriptor(auth_token, "paid", priority)
+        if auth_token:
+            priority += 1
+
+        state = load_apify_token_state()
+        current_token = str(state.get("current_token") or "").strip()
+        add_descriptor(current_token, "paid", priority)
+        if current_token:
+            priority += 1
+
+        for token in (state.get("tokens") or {}).keys():
+            add_descriptor(token, "paid", priority)
+            if token:
+                priority += 1
+
+    if strategy == "paid_first_free_fallback":
+        for token in free_tokens:
+            add_descriptor(token, "free", priority, hard_limit_usd=get_apify_free_token_hard_limit_usd())
+            priority += 1
+
+    return descriptors
+
+
+def get_apify_token_candidates():
+    return [item.get("token") for item in get_apify_token_pool() if item.get("token")]
 
 
 def set_apify_token(token):
@@ -4107,9 +4423,9 @@ def rotate_apify_token(tried_tokens=None):
     return None
 
 
-def get_apify_batch_size(platform):
+def get_apify_batch_size(platform, input_data=None):
     max_batch_size = max(1, APIFY_MAX_IDENTIFIERS_PER_BATCH.get(platform, 50))
-    estimated_cost = APIFY_ESTIMATED_COST_PER_IDENTIFIER_USD.get(platform)
+    estimated_cost = estimate_apify_identifier_cost_usd(platform, input_data or {})
     if not isinstance(estimated_cost, (int, float)) or estimated_cost <= 0:
         return max_batch_size
     budget_batch_size = max(1, int(APIFY_SOFT_CREDIT_LIMIT_USD / float(estimated_cost)))
@@ -4437,6 +4753,663 @@ def build_target_preview(identifiers, max_items=5):
     }
 
 
+def safe_positive_float(value, default=0.0):
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return float(default)
+    return max(0.0, parsed)
+
+
+def safe_positive_int(value, default=0):
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return int(default)
+    return max(0, parsed)
+
+
+def build_apify_auth_headers(token):
+    cleaned = str(token or "").strip()
+    return {"Authorization": f"Bearer {cleaned}"} if cleaned else {}
+
+
+def extract_apify_response_error(response):
+    if response is None:
+        return "unknown error"
+
+    try:
+        payload = response.json() or {}
+    except ValueError:
+        payload = {}
+
+    if isinstance(payload.get("error"), dict):
+        error_message = payload["error"].get("message") or payload["error"].get("type")
+        if error_message:
+            return str(error_message).strip()
+
+    if payload.get("error"):
+        return str(payload.get("error")).strip()
+
+    text = str(getattr(response, "text", "") or "").strip()
+    if text:
+        return text
+    return f"HTTP {getattr(response, 'status_code', 'unknown')}"
+
+
+def get_apify_requested_results_per_identifier(platform, input_data):
+    if platform == "tiktok":
+        return max(1, safe_positive_int((input_data or {}).get("resultsPerPage"), 20))
+    if platform == "youtube":
+        return max(1, safe_positive_int((input_data or {}).get("maxResults"), 10))
+    return 1
+
+
+def estimate_apify_identifier_cost_usd(platform, input_data):
+    per_identifier_cost = safe_positive_float(APIFY_ESTIMATED_COST_PER_IDENTIFIER_USD.get(platform), 0.0)
+    per_result_cost = safe_positive_float(APIFY_ESTIMATED_COST_PER_RESULT_USD.get(platform), 0.0)
+    requested_results = get_apify_requested_results_per_identifier(platform, input_data)
+    if per_result_cost > 0 and requested_results > 0:
+        per_identifier_cost = max(per_identifier_cost, requested_results * per_result_cost)
+    return round(per_identifier_cost, 6)
+
+
+def estimate_apify_request_cost_usd(platform, input_data, identifiers):
+    cleaned_identifiers = [item for item in identifiers if str(item or "").strip()]
+    if not cleaned_identifiers:
+        return 0.0
+    estimated_cost = estimate_apify_identifier_cost_usd(platform, input_data) * len(cleaned_identifiers)
+    return round(estimated_cost, 6)
+
+
+def apply_apify_budget_guard_band(estimated_cost_usd):
+    guarded_cost = safe_positive_float(estimated_cost_usd, 0.0) * APIFY_BUDGET_SAFETY_MULTIPLIER
+    guarded_cost += APIFY_BUDGET_BUFFER_USD
+    return round(guarded_cost, 6)
+
+
+def remember_apify_budget_snapshot(snapshot):
+    token = str((snapshot or {}).get("token") or "").strip()
+    if not token:
+        return
+
+    state = load_apify_token_state()
+    tokens = state.setdefault("tokens", {})
+    token_state = tokens.get(token, {})
+    token_state.update({
+        "masked": snapshot.get("masked") or mask_apify_token(token),
+        "max_monthly_usage_usd": snapshot.get("max_monthly_usage_usd"),
+        "monthly_usage_usd": snapshot.get("monthly_usage_usd"),
+        "remaining_monthly_usage_usd": snapshot.get("remaining_monthly_usage_usd"),
+        "monthly_usage_cycle_start_at": snapshot.get("monthly_usage_cycle_start_at"),
+        "monthly_usage_cycle_end_at": snapshot.get("monthly_usage_cycle_end_at"),
+        "budget_checked_at": snapshot.get("checked_at") or iso_now(),
+    })
+    tokens[token] = token_state
+    save_apify_token_state(state)
+
+
+def fetch_apify_budget_snapshot(token, cancel_check=None):
+    cleaned_token = str(token or "").strip()
+    if not cleaned_token:
+        raise RuntimeError("缺少 Apify token，无法查询月额度。")
+
+    response = apify_request(
+        "GET",
+        f"{APIFY_API_BASE}/users/me/limits",
+        headers=build_apify_auth_headers(cleaned_token),
+        cancel_check=cancel_check,
+        retry_context="get account limits",
+    )
+    if response.status_code != 200:
+        raise RuntimeError(f"查询 Apify 月额度失败：{extract_apify_response_error(response)}")
+
+    payload = (response.json() or {}).get("data") or {}
+    limits = payload.get("limits") or {}
+    current = payload.get("current") or {}
+    cycle = payload.get("monthlyUsageCycle") or {}
+    max_monthly_usage_usd = safe_positive_float(limits.get("maxMonthlyUsageUsd"), 0.0)
+    monthly_usage_usd = safe_positive_float(current.get("monthlyUsageUsd"), 0.0)
+    snapshot = {
+        "token": cleaned_token,
+        "masked": mask_apify_token(cleaned_token),
+        "max_monthly_usage_usd": round(max_monthly_usage_usd, 6),
+        "monthly_usage_usd": round(monthly_usage_usd, 6),
+        "remaining_monthly_usage_usd": round(max(0.0, max_monthly_usage_usd - monthly_usage_usd), 6),
+        "monthly_usage_cycle_start_at": (
+            cycle.get("startedAt")
+            or cycle.get("startAt")
+            or cycle.get("startDate")
+            or current.get("monthlyUsageCycleStartedAt")
+        ),
+        "monthly_usage_cycle_end_at": (
+            cycle.get("endsAt")
+            or cycle.get("endAt")
+            or cycle.get("endDate")
+            or current.get("monthlyUsageCycleEndsAt")
+        ),
+        "checked_at": iso_now(),
+    }
+    remember_apify_budget_snapshot(snapshot)
+    return snapshot
+
+
+def prune_apify_budget_reservations(state):
+    reservations = state.setdefault("budget_reservations", {})
+    now_ts = time.time()
+    stale_keys = []
+    for reservation_key, reservation in reservations.items():
+        if not isinstance(reservation, dict):
+            stale_keys.append(reservation_key)
+            continue
+        expires_at_ts = float(reservation.get("expires_at_ts") or 0.0)
+        if expires_at_ts and expires_at_ts <= now_ts:
+            stale_keys.append(reservation_key)
+
+    for reservation_key in stale_keys:
+        reservations.pop(reservation_key, None)
+
+    return stale_keys
+
+
+def get_apify_reserved_budget_usd(token, state=None):
+    cleaned_token = str(token or "").strip()
+    if not cleaned_token:
+        return 0.0
+
+    payload = state or load_apify_token_state()
+    prune_apify_budget_reservations(payload)
+    reservations = payload.get("budget_reservations") or {}
+    total = 0.0
+    for reservation in reservations.values():
+        if not isinstance(reservation, dict):
+            continue
+        if str(reservation.get("token") or "").strip() != cleaned_token:
+            continue
+        total += safe_positive_float(reservation.get("amount_usd"), 0.0)
+    return round(total, 6)
+
+
+def apply_apify_reserved_budget(snapshot, state=None):
+    payload = dict(snapshot or {})
+    token = str(payload.get("token") or "").strip()
+    monthly_usage_usd = safe_positive_float(payload.get("monthly_usage_usd"), 0.0)
+    remaining_budget_usd = safe_positive_float(payload.get("remaining_monthly_usage_usd"), 0.0)
+    hard_limit_usd = payload.get("hard_limit_usd")
+    hard_limit_remaining_usd = None
+    if hard_limit_usd is not None:
+        hard_limit_usd = round(safe_positive_float(hard_limit_usd, 0.0), 6)
+        payload["hard_limit_usd"] = hard_limit_usd
+        hard_limit_remaining_usd = round(max(0.0, hard_limit_usd - monthly_usage_usd), 6)
+        payload["hard_limit_remaining_usd"] = hard_limit_remaining_usd
+        remaining_budget_usd = min(remaining_budget_usd, hard_limit_remaining_usd)
+
+    reserved_budget_usd = get_apify_reserved_budget_usd(token, state=state)
+    payload["policy_remaining_monthly_usage_usd"] = round(remaining_budget_usd, 6)
+    payload["reserved_budget_usd"] = reserved_budget_usd
+    payload["effective_remaining_monthly_usage_usd"] = round(max(0.0, remaining_budget_usd - reserved_budget_usd), 6)
+    return payload
+
+
+def reserve_apify_budget(snapshot, amount_usd, reservation_key, metadata=None):
+    cleaned_key = str(reservation_key or "").strip()
+    cleaned_token = str((snapshot or {}).get("token") or "").strip()
+    required_amount = safe_positive_float(amount_usd, 0.0)
+    if not cleaned_key or not cleaned_token or required_amount <= 0:
+        return {"success": False, "error": "预留 Apify 额度所需参数不完整。"}
+
+    with APIFY_TOKEN_STATE_LOCK:
+        state = load_apify_token_state()
+        prune_apify_budget_reservations(state)
+        reservations = state.setdefault("budget_reservations", {})
+        existing = reservations.get(cleaned_key)
+        if isinstance(existing, dict):
+            existing_token = str(existing.get("token") or "").strip()
+            existing_amount = safe_positive_float(existing.get("amount_usd"), 0.0)
+            if existing_token == cleaned_token and abs(existing_amount - required_amount) < 1e-9:
+                save_apify_token_state(state)
+                return {"success": True, "reservation": dict(existing)}
+            reservations.pop(cleaned_key, None)
+
+        reserved_budget_usd = get_apify_reserved_budget_usd(cleaned_token, state=state)
+        remaining_budget_usd = safe_positive_float((snapshot or {}).get("remaining_monthly_usage_usd"), 0.0)
+        effective_remaining_usd = round(max(0.0, remaining_budget_usd - reserved_budget_usd), 6)
+        if effective_remaining_usd + 1e-9 < required_amount:
+            save_apify_token_state(state)
+            return {
+                "success": False,
+                "error": (
+                    f"{mask_apify_token(cleaned_token)} 当前可用额度仅 {effective_remaining_usd:.3f} USD，"
+                    f"不足以为当前批次预留 {required_amount:.3f} USD。"
+                ),
+            }
+
+        reservation = {
+            "key": cleaned_key,
+            "token": cleaned_token,
+            "masked": mask_apify_token(cleaned_token),
+            "amount_usd": round(required_amount, 6),
+            "created_at": iso_now(),
+            "expires_at_ts": time.time() + APIFY_BUDGET_RESERVATION_TTL_SECONDS,
+            "metadata": metadata or {},
+        }
+        reservations[cleaned_key] = reservation
+        save_apify_token_state(state)
+        return {"success": True, "reservation": reservation}
+
+
+def release_apify_budget_reservation(reservation_key):
+    cleaned_key = str(reservation_key or "").strip()
+    if not cleaned_key:
+        return None
+
+    with APIFY_TOKEN_STATE_LOCK:
+        state = load_apify_token_state()
+        reservations = state.setdefault("budget_reservations", {})
+        released = reservations.pop(cleaned_key, None)
+        prune_apify_budget_reservations(state)
+        save_apify_token_state(state)
+        return released
+
+
+def get_ordered_apify_token_candidates(preferred_tokens=None):
+    return [item.get("token") for item in get_ordered_apify_token_pool(preferred_tokens=preferred_tokens)]
+
+
+def get_ordered_apify_token_pool(preferred_tokens=None):
+    pool = list(get_apify_token_pool())
+    ordered = []
+    added = set()
+
+    for token in preferred_tokens or []:
+        cleaned = str(token or "").strip()
+        if not cleaned or cleaned in added:
+            continue
+        descriptor = next((item for item in pool if item.get("token") == cleaned), None)
+        if descriptor is None:
+            continue
+        ordered.append(descriptor)
+        added.add(cleaned)
+
+    for descriptor in pool:
+        token = descriptor.get("token")
+        if not token or token in added:
+            continue
+        ordered.append(descriptor)
+        added.add(token)
+
+    return ordered
+
+
+def collect_apify_budget_snapshots(cancel_check=None, preferred_tokens=None):
+    snapshots = []
+    errors = []
+
+    for descriptor in get_ordered_apify_token_pool(preferred_tokens=preferred_tokens):
+        candidate = descriptor.get("token")
+        if cancel_check and cancel_check():
+            raise RuntimeError("用户取消")
+        try:
+            snapshot = fetch_apify_budget_snapshot(candidate, cancel_check=cancel_check)
+            snapshot["tier"] = descriptor.get("tier")
+            snapshot["priority"] = descriptor.get("priority")
+            snapshot["hard_limit_usd"] = descriptor.get("hard_limit_usd")
+            snapshot["masked"] = descriptor.get("masked") or snapshot.get("masked")
+            snapshots.append(snapshot)
+        except Exception as exc:
+            errors.append(f"{mask_apify_token(candidate)}: {exc}")
+
+    return snapshots, errors
+
+
+def normalize_apify_batch_plan_inputs(identifiers_or_batches):
+    if not identifiers_or_batches:
+        return []
+
+    first_item = identifiers_or_batches[0]
+    if isinstance(first_item, (list, tuple, set)):
+        normalized_batches = []
+        for batch in identifiers_or_batches:
+            cleaned_batch = [item for item in batch if str(item or "").strip()]
+            if cleaned_batch:
+                normalized_batches.append(cleaned_batch)
+        return normalized_batches
+
+    cleaned_batch = [item for item in identifiers_or_batches if str(item or "").strip()]
+    return [cleaned_batch] if cleaned_batch else []
+
+
+def plan_apify_token_batches(
+    platform,
+    input_data,
+    identifiers_or_batches,
+    cancel_check=None,
+    preferred_tokens=None,
+    snapshots=None,
+    state=None,
+):
+    normalized_batches = normalize_apify_batch_plan_inputs(identifiers_or_batches)
+    if not normalized_batches:
+        return {
+            "success": False,
+            "planned_batches": [],
+            "failed_batches": [],
+            "snapshots": [],
+            "lookup_errors": [],
+        }
+
+    snapshot_errors = []
+    source_snapshots = snapshots
+    if source_snapshots is None:
+        source_snapshots, snapshot_errors = collect_apify_budget_snapshots(
+            cancel_check=cancel_check,
+            preferred_tokens=preferred_tokens,
+        )
+    if not source_snapshots:
+        return {
+            "success": False,
+            "planned_batches": [],
+            "failed_batches": [
+                {
+                    "batch_index": 1,
+                    "identifiers": normalized_batches[0],
+                    "error": "没有可用 token",
+                }
+            ],
+            "snapshots": [],
+            "lookup_errors": snapshot_errors,
+        }
+
+    state = state or load_apify_token_state()
+    effective_snapshots = [apply_apify_reserved_budget(item, state=state) for item in source_snapshots]
+    planning_slots = []
+    for snapshot in effective_snapshots:
+        planning_slots.append({
+            "token": str(snapshot.get("token") or "").strip(),
+            "snapshot": snapshot,
+            "available_budget_usd": safe_positive_float(
+                snapshot.get("effective_remaining_monthly_usage_usd"),
+                0.0,
+            ),
+        })
+
+    planned_batches = []
+    failed_batches = []
+    for batch_index, batch_identifiers in enumerate(normalized_batches, start=1):
+        estimated_cost_usd = estimate_apify_request_cost_usd(platform, input_data, batch_identifiers)
+        required_budget_usd = apply_apify_budget_guard_band(estimated_cost_usd)
+        candidate_tokens = []
+
+        for slot in planning_slots:
+            available_budget_usd = safe_positive_float(slot.get("available_budget_usd"), 0.0)
+            if available_budget_usd + 1e-9 < required_budget_usd:
+                continue
+            candidate_tokens.append({
+                "token": slot.get("token"),
+                "snapshot": slot.get("snapshot"),
+                "available_budget_usd": round(available_budget_usd, 6),
+            })
+
+        if not candidate_tokens:
+            failed_batches.append({
+                "batch_index": batch_index,
+                "identifiers": list(batch_identifiers),
+                "estimated_cost_usd": estimated_cost_usd,
+                "required_budget_usd": required_budget_usd,
+            })
+            continue
+
+        selected_token = candidate_tokens[0]
+        selected_slot = next(
+            (slot for slot in planning_slots if slot.get("token") == selected_token.get("token")),
+            None,
+        )
+        if selected_slot is not None:
+            selected_slot["available_budget_usd"] = round(
+                max(0.0, safe_positive_float(selected_slot.get("available_budget_usd"), 0.0) - required_budget_usd),
+                6,
+            )
+
+        planned_batches.append({
+            "batch_index": batch_index,
+            "identifiers": list(batch_identifiers),
+            "token": selected_token.get("token"),
+            "snapshot": selected_token.get("snapshot"),
+            "estimated_cost_usd": estimated_cost_usd,
+            "required_budget_usd": required_budget_usd,
+            "candidate_tokens": candidate_tokens,
+        })
+
+    return {
+        "success": len(failed_batches) == 0,
+        "planned_batches": planned_batches,
+        "failed_batches": failed_batches,
+        "snapshots": effective_snapshots,
+        "lookup_errors": snapshot_errors,
+    }
+
+
+def build_apify_budget_failure(platform, identifiers, input_data, estimated_cost_usd, required_budget_usd, snapshots, scope):
+    cleaned_identifiers = [item for item in identifiers if str(item or "").strip()]
+    total_available = round(sum(
+        safe_positive_float(
+            item.get("effective_remaining_monthly_usage_usd", item.get("remaining_monthly_usage_usd")),
+            0.0,
+        )
+        for item in snapshots
+    ), 6)
+    max_available = round(max([
+        safe_positive_float(
+            item.get("effective_remaining_monthly_usage_usd", item.get("remaining_monthly_usage_usd")),
+            0.0,
+        )
+        for item in snapshots
+    ] or [0.0]), 6)
+    per_identifier_cost = estimate_apify_identifier_cost_usd(platform, input_data)
+    requested_results = get_apify_requested_results_per_identifier(platform, input_data)
+    platform_label = {"tiktok": "TikTok", "instagram": "Instagram", "youtube": "YouTube"}.get(platform, platform)
+    target_hint = "请减少本次账号数量或降低单账号抓取上限后重试。"
+    if platform == "instagram":
+        target_hint = "请减少本次账号数量后重试。"
+
+    error_message = (
+        f"Apify 月额度不足：{platform_label} 本次{scope}预计消耗约 {estimated_cost_usd:.3f} USD，"
+        f"按安全系数需预留 {required_budget_usd:.3f} USD，但当前可用 token 总剩余额度仅 {total_available:.3f} USD。"
+        f"{target_hint}"
+    )
+    return {
+        "success": False,
+        "error_code": "APIFY_MONTHLY_BUDGET_EXCEEDED",
+        "error": error_message,
+        "message": error_message,
+        "details": [
+            f"平台：{platform_label}",
+            f"目标数量：{len(cleaned_identifiers)}",
+            f"单目标预估费用：{per_identifier_cost:.3f} USD",
+            f"单目标结果上限：{requested_results}",
+            f"本次预估费用：{estimated_cost_usd:.3f} USD",
+            f"安全预留后所需额度：{required_budget_usd:.3f} USD",
+            f"当前单 token 最多剩余：{max_available:.3f} USD",
+            f"当前全部 token 总剩余：{total_available:.3f} USD",
+        ],
+        "budget": {
+            "platform": platform,
+            "estimated_cost_usd": estimated_cost_usd,
+            "required_budget_usd": required_budget_usd,
+            "available_budget_usd": total_available,
+            "max_token_budget_usd": max_available,
+            "target_count": len(cleaned_identifiers),
+            "requested_results_per_identifier": requested_results,
+            "tokens": [
+                {
+                    "masked": item.get("masked"),
+                    "tier": item.get("tier"),
+                    "hard_limit_usd": item.get("hard_limit_usd"),
+                    "hard_limit_remaining_usd": item.get("hard_limit_remaining_usd"),
+                    "policy_remaining_monthly_usage_usd": item.get("policy_remaining_monthly_usage_usd"),
+                    "remaining_monthly_usage_usd": item.get("remaining_monthly_usage_usd"),
+                    "effective_remaining_monthly_usage_usd": item.get("effective_remaining_monthly_usage_usd"),
+                    "reserved_budget_usd": item.get("reserved_budget_usd"),
+                    "max_monthly_usage_usd": item.get("max_monthly_usage_usd"),
+                    "monthly_usage_usd": item.get("monthly_usage_usd"),
+                    "monthly_usage_cycle_end_at": item.get("monthly_usage_cycle_end_at"),
+                }
+                for item in snapshots
+            ],
+        },
+    }
+
+
+def ensure_apify_budget_for_request(platform, input_data, identifiers, cancel_check=None, progress_callback=None):
+    cleaned_identifiers = [item for item in identifiers if str(item or "").strip()]
+    if not cleaned_identifiers:
+        return {"success": True, "estimated_cost_usd": 0.0, "required_budget_usd": 0.0, "snapshots": []}
+
+    if progress_callback:
+        progress_callback(
+            "preparing",
+            "正在检查 Apify 月额度",
+            done=0,
+            total=4,
+            **build_target_preview(cleaned_identifiers),
+        )
+
+    estimated_cost_usd = estimate_apify_request_cost_usd(platform, input_data, cleaned_identifiers)
+    required_budget_usd = apply_apify_budget_guard_band(estimated_cost_usd)
+    snapshots, snapshot_errors = collect_apify_budget_snapshots(cancel_check=cancel_check)
+    if not snapshots:
+        joined_errors = "；".join(snapshot_errors) if snapshot_errors else "没有可用 token"
+        error_message = f"无法查询 Apify 月额度，已阻止本次采集启动：{joined_errors}"
+        return {
+            "success": False,
+            "error_code": "APIFY_BUDGET_LOOKUP_FAILED",
+            "error": error_message,
+            "message": error_message,
+            "details": snapshot_errors,
+        }
+
+    state = load_apify_token_state()
+    effective_snapshots = [apply_apify_reserved_budget(item, state=state) for item in snapshots]
+    total_available = sum(
+        safe_positive_float(item.get("effective_remaining_monthly_usage_usd"), 0.0)
+        for item in effective_snapshots
+    )
+    if total_available + 1e-9 < required_budget_usd:
+        return build_apify_budget_failure(
+            platform,
+            cleaned_identifiers,
+            input_data,
+            estimated_cost_usd,
+            required_budget_usd,
+            effective_snapshots,
+            "请求",
+        )
+
+    return {
+        "success": True,
+        "estimated_cost_usd": estimated_cost_usd,
+        "required_budget_usd": required_budget_usd,
+        "snapshots": effective_snapshots,
+        "lookup_errors": snapshot_errors,
+    }
+
+
+def ensure_apify_budget_for_run(
+    platform,
+    input_data,
+    identifiers,
+    cancel_check=None,
+    reservation_key=None,
+    reservation_metadata=None,
+    preferred_tokens=None,
+):
+    cleaned_identifiers = [item for item in identifiers if str(item or "").strip()]
+    if not cleaned_identifiers:
+        return {"success": False, "error": "当前批次没有可执行的目标。"}
+
+    snapshots, snapshot_errors = collect_apify_budget_snapshots(
+        cancel_check=cancel_check,
+        preferred_tokens=preferred_tokens,
+    )
+    if not snapshots:
+        joined_errors = "；".join(snapshot_errors) if snapshot_errors else "没有可用 token"
+        error_message = f"无法查询 Apify 月额度，已阻止当前批次执行：{joined_errors}"
+        return {
+            "success": False,
+            "error_code": "APIFY_BUDGET_LOOKUP_FAILED",
+            "error": error_message,
+            "message": error_message,
+            "details": snapshot_errors,
+        }
+
+    state = load_apify_token_state()
+    effective_snapshots = [apply_apify_reserved_budget(item, state=state) for item in snapshots]
+    plan_result = plan_apify_token_batches(
+        platform,
+        input_data,
+        [cleaned_identifiers],
+        snapshots=snapshots,
+        state=state,
+    )
+    planned_batches = plan_result.get("planned_batches") or []
+    if not planned_batches:
+        estimated_cost_usd = estimate_apify_request_cost_usd(platform, input_data, cleaned_identifiers)
+        required_budget_usd = apply_apify_budget_guard_band(estimated_cost_usd)
+        return build_apify_budget_failure(
+            platform,
+            cleaned_identifiers,
+            input_data,
+            estimated_cost_usd,
+            required_budget_usd,
+            effective_snapshots,
+            "批次",
+        )
+
+    batch_plan = planned_batches[0]
+    estimated_cost_usd = batch_plan.get("estimated_cost_usd")
+    required_budget_usd = batch_plan.get("required_budget_usd")
+
+    for candidate in batch_plan.get("candidate_tokens") or []:
+        snapshot = candidate.get("snapshot") or {}
+        selected_token = str(candidate.get("token") or snapshot.get("token") or "").strip()
+        if not selected_token:
+            continue
+
+        reservation = None
+        if reservation_key:
+            reservation_result = reserve_apify_budget(
+                snapshot,
+                required_budget_usd,
+                reservation_key,
+                metadata=reservation_metadata,
+            )
+            if not reservation_result.get("success"):
+                continue
+            reservation = reservation_result.get("reservation")
+        return {
+            "success": True,
+            "token": selected_token,
+            "snapshot": snapshot,
+            "estimated_cost_usd": estimated_cost_usd,
+            "required_budget_usd": required_budget_usd,
+            "lookup_errors": snapshot_errors,
+            "reservation": reservation,
+            "plan": batch_plan,
+        }
+
+    refreshed_state = load_apify_token_state()
+    refreshed_snapshots = [apply_apify_reserved_budget(item, state=refreshed_state) for item in snapshots]
+    return build_apify_budget_failure(
+        platform,
+        cleaned_identifiers,
+        input_data,
+        estimated_cost_usd,
+        required_budget_usd,
+        refreshed_snapshots,
+        "批次",
+    )
+
+
 def translate_apify_status(status):
     status_map = {
         "SUCCEEDED": "已成功",
@@ -4450,6 +5423,349 @@ def translate_apify_status(status):
     return status_map.get(status, status or "未知状态")
 
 
+def is_apify_terminal_status(status):
+    return str(status or "").strip().upper() in {"SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"}
+
+
+def build_apify_progress_metadata(run_id=None, dataset_id=None, status=None, safe_to_retry=False, **extra):
+    payload = {"safe_to_retry": bool(safe_to_retry)}
+    if run_id:
+        payload["apify_run_id"] = run_id
+    if dataset_id:
+        payload["apify_dataset_id"] = dataset_id
+    if status:
+        payload["apify_status"] = status
+        payload["apify_status_text"] = translate_apify_status(status)
+    if extra:
+        payload.update(extra)
+    return payload
+
+
+def poll_apify_run_until_terminal(
+    token,
+    run_id,
+    *,
+    cancel_check=None,
+    progress_callback=None,
+    progress_stage="provider_running",
+    progress_message=None,
+    progress_payload=None,
+    max_wait_seconds=None,
+):
+    status_url = f"{APIFY_API_BASE}/actor-runs/{run_id}"
+    started_polling_at = time.monotonic()
+    last_run_data = {}
+
+    while True:
+        if cancel_check and cancel_check():
+            return {"cancelled": True}
+
+        try:
+            status_resp = apify_request(
+                "GET",
+                status_url,
+                params={"token": token},
+                cancel_check=cancel_check,
+                retry_context=f"poll run {run_id}",
+            )
+        except requests.RequestException as exc:
+            return {
+                "success": False,
+                "terminal": False,
+                "recoverable": True,
+                "error": f"获取运行状态异常：{exc}",
+                "run_data": last_run_data,
+            }
+
+        if status_resp.status_code != 200:
+            return {
+                "success": False,
+                "terminal": False,
+                "recoverable": True,
+                "error": f"获取运行状态失败：{extract_apify_response_error(status_resp)}",
+                "run_data": last_run_data,
+            }
+
+        last_run_data = (status_resp.json() or {}).get("data") or {}
+        final_status = last_run_data.get("status")
+        default_dataset_id = last_run_data.get("defaultDatasetId")
+
+        if final_status == "SUCCEEDED":
+            return {
+                "success": True,
+                "terminal": True,
+                "status": final_status,
+                "run_data": last_run_data,
+                "dataset_id": default_dataset_id,
+            }
+
+        if final_status in {"FAILED", "ABORTED", "TIMED-OUT"}:
+            return {
+                "success": False,
+                "terminal": True,
+                "status": final_status,
+                "run_data": last_run_data,
+                "dataset_id": default_dataset_id,
+                "error": f"远端 run 已结束：{translate_apify_status(final_status)}",
+            }
+
+        if progress_callback:
+            payload = dict(progress_payload or {})
+            payload.update(
+                build_apify_progress_metadata(
+                    run_id=run_id,
+                    dataset_id=default_dataset_id,
+                    status=final_status,
+                    safe_to_retry=False,
+                )
+            )
+            progress_callback(
+                progress_stage,
+                progress_message or f"Apify 运行中：{translate_apify_status(final_status)}",
+                **payload,
+            )
+
+        if max_wait_seconds is not None and (time.monotonic() - started_polling_at) >= max_wait_seconds:
+            return {
+                "success": False,
+                "terminal": False,
+                "recoverable": True,
+                "timed_out": True,
+                "status": final_status,
+                "run_data": last_run_data,
+                "dataset_id": default_dataset_id,
+            }
+
+        time.sleep(APIFY_POLL_INTERVAL_SECONDS)
+
+
+def download_apify_dataset_items(token, dataset_id, *, cancel_check=None):
+    dataset_url = f"{APIFY_API_BASE}/datasets/{dataset_id}/items"
+
+    try:
+        dataset_resp = apify_request(
+            "GET",
+            dataset_url,
+            params={"token": token},
+            cancel_check=cancel_check,
+            retry_context=f"download dataset {dataset_id}",
+        )
+    except requests.RequestException as exc:
+        return {
+            "success": False,
+            "recoverable": True,
+            "error": f"下载数据集异常：{exc}",
+        }
+
+    if dataset_resp.status_code != 200:
+        return {
+            "success": False,
+            "recoverable": True,
+            "error": f"下载数据集失败：{extract_apify_response_error(dataset_resp)}",
+        }
+
+    return {
+        "success": True,
+        "items": dataset_resp.json(),
+    }
+
+
+def recover_guarded_apify_run(
+    actor_id,
+    input_data,
+    output_filename,
+    output_file_path,
+    identifiers,
+    original_identifiers,
+    skipped_count,
+    guard,
+    *,
+    progress_callback=None,
+    cancel_check=None,
+):
+    if not isinstance(guard, dict):
+        return None
+
+    run_id = str(guard.get("run_id") or "").strip()
+    dataset_id = str(guard.get("dataset_id") or "").strip()
+    token = str(guard.get("token") or "").strip()
+    if not run_id or not dataset_id or not token:
+        return None
+
+    run_guard_key = build_apify_run_guard_key(actor_id, output_filename, input_data)
+    base_progress_payload = build_target_preview(identifiers)
+
+    if progress_callback:
+        progress_callback(
+            "recovering_remote_run",
+            "检测到已有远端 Apify run，正在尝试恢复结果",
+            done=1,
+            total=4,
+            **base_progress_payload,
+            **build_apify_progress_metadata(
+                run_id=run_id,
+                dataset_id=dataset_id,
+                status=guard.get("status"),
+                safe_to_retry=False,
+            ),
+        )
+
+    recovery_stage = "recovering_remote_run"
+    waiting_started = False
+    while True:
+        poll_result = poll_apify_run_until_terminal(
+            token,
+            run_id,
+            cancel_check=cancel_check,
+            progress_callback=progress_callback,
+            progress_stage=recovery_stage,
+            progress_message=(
+                "正在恢复已有远端 Apify run"
+                if recovery_stage == "recovering_remote_run"
+                else "远端 Apify run 仍在运行，继续等待恢复结果"
+            ),
+            progress_payload={
+                "done": 1,
+                "total": 4,
+                **base_progress_payload,
+            },
+            max_wait_seconds=max(APIFY_MIN_WAIT_SECONDS, min(APIFY_MAX_WAIT_SECONDS, max(1, len(identifiers)) * 45)) if not waiting_started else None,
+        )
+
+        if poll_result.get("cancelled"):
+            return build_cancelled_result()
+
+        run_data = poll_result.get("run_data") or {}
+        current_status = poll_result.get("status") or run_data.get("status")
+        dataset_id = str(poll_result.get("dataset_id") or run_data.get("defaultDatasetId") or dataset_id).strip()
+
+        if poll_result.get("success"):
+            while True:
+                if progress_callback:
+                    progress_callback(
+                        "downloading",
+                        "正在下载已恢复的 Apify 数据集结果",
+                        done=2,
+                        total=4,
+                        **base_progress_payload,
+                        **build_apify_progress_metadata(
+                            run_id=run_id,
+                            dataset_id=dataset_id,
+                            status=current_status or "SUCCEEDED",
+                            safe_to_retry=False,
+                        ),
+                    )
+                if cancel_check and cancel_check():
+                    return build_cancelled_result()
+
+                dataset_result = download_apify_dataset_items(token, dataset_id, cancel_check=cancel_check)
+                if dataset_result.get("success"):
+                    items = dataset_result.get("items")
+                    with open(output_file_path, 'w', encoding='utf-8') as f:
+                        json.dump(items, f, indent=2, ensure_ascii=False)
+
+                    apify_summary = build_apify_run_summary(
+                        actor_id,
+                        "rest",
+                        run_data,
+                        cost_available=True,
+                    )
+                    result = finalize_apify_output(
+                        output_filename,
+                        output_file_path,
+                        identifiers,
+                        skipped_count,
+                        progress_callback,
+                        apify_summary=apify_summary,
+                        requested_identifiers=original_identifiers,
+                    )
+                    if result.get("success"):
+                        result["raw_items"] = items
+                        clear_apify_run_guard(run_guard_key)
+                    return result
+
+                remember_apify_run_guard(
+                    run_guard_key,
+                    actor_id=actor_id,
+                    output_filename=output_filename,
+                    input_data=input_data,
+                    reason=dataset_result.get("error") or "下载已恢复数据集失败",
+                    token=token,
+                    run_id=run_id,
+                    dataset_id=dataset_id,
+                    status=current_status or "SUCCEEDED",
+                )
+                recovery_stage = "waiting_remote_run"
+                waiting_started = True
+                if progress_callback:
+                    progress_callback(
+                        "waiting_remote_run",
+                        dataset_result.get("error") or "已恢复 run 成功结束，但暂时还拿不到数据集，继续等待",
+                        done=1,
+                        total=4,
+                        **base_progress_payload,
+                        **build_apify_progress_metadata(
+                            run_id=run_id,
+                            dataset_id=dataset_id,
+                            status=current_status or "SUCCEEDED",
+                            safe_to_retry=False,
+                        ),
+                    )
+                time.sleep(APIFY_POLL_INTERVAL_SECONDS)
+
+        if poll_result.get("terminal"):
+            clear_apify_run_guard(run_guard_key)
+            return build_apify_non_retryable_run_failure(
+                actor_id,
+                output_filename,
+                token,
+                run_id,
+                dataset_id,
+                poll_result.get("error") or f"远端 run 已结束：{translate_apify_status(current_status)}",
+                run_data=run_data,
+                error_code="APIFY_REMOTE_RUN_FAILED",
+                status=current_status,
+            )
+
+        waited_seconds = None
+        if poll_result.get("timed_out"):
+            waited_seconds = max(APIFY_MIN_WAIT_SECONDS, min(APIFY_MAX_WAIT_SECONDS, max(1, len(identifiers)) * 45))
+        remember_apify_run_guard(
+            run_guard_key,
+            actor_id=actor_id,
+            output_filename=output_filename,
+            input_data=input_data,
+            reason=(
+                f"远端 run 仍在恢复中，已切换到持续等待模式。"
+                if poll_result.get("timed_out")
+                else (poll_result.get("error") or "远端 run 仍在运行，继续等待")
+            ),
+            token=token,
+            run_id=run_id,
+            dataset_id=dataset_id,
+            status=current_status,
+        )
+        recovery_stage = "waiting_remote_run"
+        waiting_started = True
+        if progress_callback:
+            progress_callback(
+                "waiting_remote_run",
+                (
+                    f"远端 Apify run 仍在运行，继续等待恢复结果"
+                    if waited_seconds is None
+                    else f"本地等待约 {waited_seconds} 秒后仍未结束，继续等待远端 run"
+                ),
+                done=1,
+                total=4,
+                **base_progress_payload,
+                **build_apify_progress_metadata(
+                    run_id=run_id,
+                    dataset_id=dataset_id,
+                    status=current_status,
+                    safe_to_retry=False,
+                ),
+            )
+
 def build_apify_cost_summary_text(cost_available, usage_total_usd, execution_method, note=None):
     if note:
         return note
@@ -4460,11 +5776,21 @@ def build_apify_cost_summary_text(cost_available, usage_total_usd, execution_met
     return "本次 Apify 运行已完成，但暂未返回费用数据。"
 
 
-def apify_request(method, url, *, cancel_check=None, timeout=APIFY_REQUEST_TIMEOUT, retry_context=None, **kwargs):
+def apify_request(
+    method,
+    url,
+    *,
+    cancel_check=None,
+    timeout=APIFY_REQUEST_TIMEOUT,
+    retry_context=None,
+    allow_retries=True,
+    **kwargs,
+):
     last_exception = None
     last_response = None
+    attempt_budget = APIFY_HTTP_RETRY_ATTEMPTS if allow_retries else 1
 
-    for attempt in range(1, APIFY_HTTP_RETRY_ATTEMPTS + 1):
+    for attempt in range(1, attempt_budget + 1):
         if cancel_check and cancel_check():
             raise RuntimeError("用户取消")
 
@@ -4477,22 +5803,22 @@ def apify_request(method, url, *, cancel_check=None, timeout=APIFY_REQUEST_TIMEO
             )
         except requests.RequestException as exc:
             last_exception = exc
-            if attempt >= APIFY_HTTP_RETRY_ATTEMPTS:
+            if attempt >= attempt_budget:
                 raise
             print(
                 f"[Apify] {retry_context or method.upper()} request exception "
-                f"(attempt {attempt}/{APIFY_HTTP_RETRY_ATTEMPTS}): {exc}"
+                f"(attempt {attempt}/{attempt_budget}): {exc}"
             )
         else:
             if response.status_code not in APIFY_TRANSIENT_STATUS_CODES:
                 return response
 
             last_response = response
-            if attempt >= APIFY_HTTP_RETRY_ATTEMPTS:
+            if attempt >= attempt_budget:
                 return response
             print(
                 f"[Apify] {retry_context or method.upper()} transient status "
-                f"{response.status_code} (attempt {attempt}/{APIFY_HTTP_RETRY_ATTEMPTS})"
+                f"{response.status_code} (attempt {attempt}/{attempt_budget})"
             )
 
         time.sleep(APIFY_HTTP_RETRY_BACKOFF_SECONDS * attempt)
@@ -4716,7 +6042,104 @@ def build_partial_scrape_result(platform, items, identifiers, requested_total=No
             except OSError:
                 pass
 
-def run_apify_rest_command(actor_id, input_data, output_filename, force_refresh=False, progress_callback=None, cancel_check=None):
+def build_apify_non_retryable_run_failure(
+    actor_id,
+    output_filename,
+    token,
+    run_id,
+    dataset_id,
+    reason,
+    *,
+    run_data=None,
+    error_code="APIFY_REMOTE_RUN_UNCERTAIN",
+    status=None,
+):
+    status_text = translate_apify_status(status)
+    message = (
+        f"Apify 远端任务已创建（run_id: {run_id}），但本地无法安全确认最终结果：{reason}。"
+        f"为避免重复扣费，系统已停止自动重试，也不会自动再次提交这一批。"
+        f"请先到 Apify 控制台确认该 run 状态，再决定是否手动重试。"
+    )
+    if error_code == "APIFY_REMOTE_RUN_FAILED":
+        message = (
+            f"Apify 远端任务已终止（run_id: {run_id}，状态：{status_text}）。"
+            f"为避免重复扣费，系统已停止自动重试当前批次。"
+            f"请人工确认失败原因后再决定是否重试。"
+        )
+    result = {
+        "success": False,
+        "safe_to_retry": False,
+        "error_code": error_code,
+        "error": message,
+        "message": message,
+        "remote_run_started": True,
+        "apify_run_id": run_id,
+        "apify_dataset_id": dataset_id,
+        "apify_token_masked": mask_apify_token(token),
+    }
+    if status:
+        result["apify_status"] = status
+        result["apify_status_text"] = status_text
+    apify_summary = build_apify_run_summary(
+        actor_id,
+        "rest",
+        run_data or {
+            "id": run_id,
+            "status": status,
+            "defaultDatasetId": dataset_id,
+        },
+        cost_available=False,
+        note=reason,
+    )
+    if isinstance(apify_summary, dict):
+        log_apify_run_summary(output_filename, apify_summary)
+        result["apify"] = apify_summary
+    return result
+
+
+def build_apify_uncertain_submission_failure(actor_id, output_filename, token, reason, guard=None, *, error_code="APIFY_RUN_SUBMISSION_UNCERTAIN"):
+    message = (
+        f"Apify 任务提交阶段状态不确定：{reason}。"
+        f"为避免重复扣费，系统已停止自动重试，也不会自动再次提交这一批。"
+        f"请先到 Apify 控制台确认最近 run，再决定是否手动重试。"
+    )
+    result = {
+        "success": False,
+        "safe_to_retry": False,
+        "error_code": error_code,
+        "error": message,
+        "message": message,
+        "remote_run_started": False,
+        "apify_token_masked": mask_apify_token(token),
+    }
+    if isinstance(guard, dict):
+        result["guard"] = guard
+        if guard.get("run_id"):
+            result["apify_run_id"] = guard.get("run_id")
+        if guard.get("dataset_id"):
+            result["apify_dataset_id"] = guard.get("dataset_id")
+    apify_summary = build_apify_run_summary(
+        actor_id,
+        "rest",
+        run_data={"status": None},
+        cost_available=False,
+        note=reason,
+    )
+    if isinstance(apify_summary, dict):
+        log_apify_run_summary(output_filename, apify_summary)
+        result["apify"] = apify_summary
+    return result
+
+
+def run_apify_rest_command(
+    actor_id,
+    input_data,
+    output_filename,
+    force_refresh=False,
+    progress_callback=None,
+    cancel_check=None,
+    preferred_tokens=None,
+):
     if actor_id not in ALLOWED_APIFY_ACTORS:
         return {"success": False, "error": f"不允许调用该 Actor：{actor_id}"}
 
@@ -4726,9 +6149,39 @@ def run_apify_rest_command(actor_id, input_data, output_filename, force_refresh=
 
     identifiers = get_scrape_identifiers(output_filename, input_data)
     original_identifiers = list(identifiers)
+    run_guard_key = build_apify_run_guard_key(actor_id, output_filename, input_data)
 
     if cancel_check and cancel_check():
         return build_cancelled_result()
+
+    existing_guard = get_apify_run_guard(run_guard_key)
+    if existing_guard:
+        if existing_guard.get("run_id") and existing_guard.get("dataset_id"):
+            recovered_result = recover_guarded_apify_run(
+                actor_id,
+                input_data,
+                output_filename,
+                output_file_path,
+                identifiers,
+                original_identifiers,
+                0,
+                existing_guard,
+                progress_callback=progress_callback,
+                cancel_check=cancel_check,
+            )
+            if recovered_result is not None:
+                return recovered_result
+        message = build_apify_run_guard_message(existing_guard)
+        return {
+            "success": False,
+            "safe_to_retry": False,
+            "error_code": "APIFY_SUBMISSION_LOCKED",
+            "error": message,
+            "message": message,
+            "guard": existing_guard,
+            "apify_run_id": existing_guard.get("run_id"),
+            "apify_dataset_id": existing_guard.get("dataset_id"),
+        }
 
     skipped_count = 0
     if not force_refresh and identifiers:
@@ -4763,15 +6216,34 @@ def run_apify_rest_command(actor_id, input_data, output_filename, force_refresh=
         set_scrape_identifiers(output_filename, input_data, identifiers)
         skipped_count = 0
 
+    reservation_key = f"apify-run:{output_filename}:{uuid.uuid4().hex}"
+    budget_guard = ensure_apify_budget_for_run(
+        output_filename,
+        input_data,
+        identifiers,
+        cancel_check=cancel_check,
+        reservation_key=reservation_key,
+        reservation_metadata={
+            "actor_id": actor_id,
+            "platform": output_filename,
+            "identifier_count": len(identifiers),
+        },
+        preferred_tokens=preferred_tokens,
+    )
+    if not budget_guard.get("success"):
+        return budget_guard
+
     with open(input_file_path, 'w') as f:
         json.dump(input_data, f, indent=2)
 
-    token = get_apify_token()
+    token = budget_guard.get("token") or get_apify_token()
     if not token:
         return {"success": False, "error": "未配置 Apify token"}
 
     actor_ref = actor_id.replace("/", "~")
     run_url = f"{APIFY_API_BASE}/acts/{actor_ref}/runs"
+    run_id = None
+    dataset_id = None
 
     try:
         run_info = {}
@@ -4793,9 +6265,27 @@ def run_apify_rest_command(actor_id, input_data, output_filename, force_refresh=
             json=input_data,
             cancel_check=cancel_check,
             retry_context=f"start run {actor_id}",
+            allow_retries=False,
         )
         if start_resp.status_code not in (200, 201):
-            return {"success": False, "error": f"启动 Apify 任务失败：{start_resp.text}"}
+            reason = f"启动 Apify 任务失败：{extract_apify_response_error(start_resp)}"
+            if start_resp.status_code in APIFY_TRANSIENT_STATUS_CODES:
+                guard = remember_apify_run_guard(
+                    run_guard_key,
+                    actor_id=actor_id,
+                    output_filename=output_filename,
+                    input_data=input_data,
+                    reason=reason,
+                    token=token,
+                )
+                return build_apify_uncertain_submission_failure(
+                    actor_id,
+                    output_filename,
+                    token,
+                    reason,
+                    guard=guard,
+                )
+            return {"success": False, "error": reason}
 
         run_info = (start_resp.json() or {}).get('data', {})
         run_id = run_info.get('id')
@@ -4803,46 +6293,81 @@ def run_apify_rest_command(actor_id, input_data, output_filename, force_refresh=
         if not run_id or not dataset_id:
             return {"success": False, "error": "Apify API 未返回 run_id 或 dataset_id"}
 
-        status_url = f"{APIFY_API_BASE}/actor-runs/{run_id}"
-        final_status = None
-        max_wait_seconds = max(APIFY_MIN_WAIT_SECONDS, min(APIFY_MAX_WAIT_SECONDS, len(identifiers) * 45))
-        started_polling_at = time.monotonic()
-        while (time.monotonic() - started_polling_at) < max_wait_seconds:
-            if cancel_check and cancel_check():
-                return build_cancelled_result()
-            status_resp = apify_request(
-                "GET",
-                status_url,
-                params={"token": token},
-                cancel_check=cancel_check,
-                retry_context=f"poll run {run_id}",
-            )
-            if status_resp.status_code != 200:
-                return {"success": False, "error": f"获取运行状态失败：{status_resp.text}"}
+        remember_apify_run_guard(
+            run_guard_key,
+            actor_id=actor_id,
+            output_filename=output_filename,
+            input_data=input_data,
+            reason="远端 run 已创建，正在等待本地确认最终结果。",
+            token=token,
+            run_id=run_id,
+            dataset_id=dataset_id,
+            status=run_info.get("status"),
+        )
 
-            final_run_data = (status_resp.json() or {}).get('data') or {}
-            final_status = final_run_data.get('status')
-            if final_status == 'SUCCEEDED':
-                break
-            if final_status in ('FAILED', 'ABORTED', 'TIMED-OUT'):
-                return {"success": False, "error": f"Apify 运行失败：{translate_apify_status(final_status)}"}
-            if progress_callback:
-                progress_callback(
-                    "apify_running",
-                    f"Apify 运行中：{translate_apify_status(final_status)}",
-                    done=1,
-                    total=4,
-                    **build_target_preview(identifiers),
+        poll_result = poll_apify_run_until_terminal(
+            token,
+            run_id,
+            cancel_check=cancel_check,
+            progress_callback=progress_callback,
+            progress_stage="apify_running",
+            progress_payload={
+                "done": 1,
+                "total": 4,
+                **build_target_preview(identifiers),
+            },
+            max_wait_seconds=max(APIFY_MIN_WAIT_SECONDS, min(APIFY_MAX_WAIT_SECONDS, len(identifiers) * 45)),
+        )
+
+        if poll_result.get("cancelled"):
+            return build_cancelled_result()
+
+        final_run_data = poll_result.get("run_data") or run_info or {}
+        final_status = poll_result.get("status") or final_run_data.get("status")
+        dataset_id = str(poll_result.get("dataset_id") or final_run_data.get("defaultDatasetId") or dataset_id).strip()
+
+        if not poll_result.get("success"):
+            if poll_result.get("terminal"):
+                clear_apify_run_guard(run_guard_key)
+                return build_apify_non_retryable_run_failure(
+                    actor_id,
+                    output_filename,
+                    token,
+                    run_id,
+                    dataset_id,
+                    poll_result.get("error") or f"远端 run 已结束：{translate_apify_status(final_status)}",
+                    run_data=final_run_data or run_info,
+                    error_code="APIFY_REMOTE_RUN_FAILED",
+                    status=final_status,
                 )
-            time.sleep(APIFY_POLL_INTERVAL_SECONDS)
-        else:
-            waited_seconds = int(time.monotonic() - started_polling_at)
-            return {
-                "success": False,
-                "error": f"API 本地运行超时，等待成功状态。已等待约 {waited_seconds} 秒，本次批量 {len(identifiers)} 个博主/链接。"
-            }
 
-        dataset_url = f"{APIFY_API_BASE}/datasets/{dataset_id}/items"
+            guard = remember_apify_run_guard(
+                run_guard_key,
+                actor_id=actor_id,
+                output_filename=output_filename,
+                input_data=input_data,
+                reason=(
+                    poll_result.get("error")
+                    or f"本地等待超时，已切换到远端恢复模式。"
+                ),
+                token=token,
+                run_id=run_id,
+                dataset_id=dataset_id,
+                status=final_status,
+            )
+            return recover_guarded_apify_run(
+                actor_id,
+                input_data,
+                output_filename,
+                output_file_path,
+                identifiers,
+                original_identifiers,
+                skipped_count,
+                guard,
+                progress_callback=progress_callback,
+                cancel_check=cancel_check,
+            )
+
         if progress_callback:
             progress_callback(
                 "downloading",
@@ -4850,20 +6375,43 @@ def run_apify_rest_command(actor_id, input_data, output_filename, force_refresh=
                 done=2,
                 total=4,
                 **build_target_preview(identifiers),
+                **build_apify_progress_metadata(
+                    run_id=run_id,
+                    dataset_id=dataset_id,
+                    status=final_status,
+                    safe_to_retry=False,
+                ),
             )
         if cancel_check and cancel_check():
             return build_cancelled_result()
-        dataset_resp = apify_request(
-            "GET",
-            dataset_url,
-            params={"token": token},
-            cancel_check=cancel_check,
-            retry_context=f"download dataset {dataset_id}",
-        )
-        if dataset_resp.status_code != 200:
-            return {"success": False, "error": f"下载数据集失败：{dataset_resp.text}"}
 
-        items = dataset_resp.json()
+        dataset_result = download_apify_dataset_items(token, dataset_id, cancel_check=cancel_check)
+        if not dataset_result.get("success"):
+            guard = remember_apify_run_guard(
+                run_guard_key,
+                actor_id=actor_id,
+                output_filename=output_filename,
+                input_data=input_data,
+                reason=dataset_result.get("error") or "下载数据集失败",
+                token=token,
+                run_id=run_id,
+                dataset_id=dataset_id,
+                status=final_status or "SUCCEEDED",
+            )
+            return recover_guarded_apify_run(
+                actor_id,
+                input_data,
+                output_filename,
+                output_file_path,
+                identifiers,
+                original_identifiers,
+                skipped_count,
+                guard,
+                progress_callback=progress_callback,
+                cancel_check=cancel_check,
+            )
+
+        items = dataset_result.get("items")
         with open(output_file_path, 'w', encoding='utf-8') as f:
             json.dump(items, f, indent=2, ensure_ascii=False)
 
@@ -4887,9 +6435,46 @@ def run_apify_rest_command(actor_id, input_data, output_filename, force_refresh=
         )
         if result.get("success"):
             result["raw_items"] = items
+            clear_apify_run_guard(run_guard_key)
         return result
     except requests.RequestException as e:
-        return {"success": False, "error": f"Apify REST 请求失败：{e}"}
+        if run_id and dataset_id:
+            guard = remember_apify_run_guard(
+                run_guard_key,
+                actor_id=actor_id,
+                output_filename=output_filename,
+                input_data=input_data,
+                reason=f"Apify REST 请求异常：{e}",
+                token=token,
+                run_id=run_id,
+                dataset_id=dataset_id,
+            )
+            return build_apify_non_retryable_run_failure(
+                actor_id,
+                output_filename,
+                token,
+                run_id,
+                dataset_id,
+                f"Apify REST 请求异常：{e}",
+                run_data=final_run_data or run_info,
+            )
+        guard = remember_apify_run_guard(
+            run_guard_key,
+            actor_id=actor_id,
+            output_filename=output_filename,
+            input_data=input_data,
+            reason=f"提交 Apify 任务时请求异常：{e}",
+            token=token,
+        )
+        return build_apify_uncertain_submission_failure(
+            actor_id,
+            output_filename,
+            token,
+            f"提交 Apify 任务时请求异常：{e}",
+            guard=guard,
+        )
+    finally:
+        release_apify_budget_reservation(reservation_key)
 
 def run_apify_command(actor_id, input_data, output_filename, force_refresh=False, progress_callback=None, cancel_check=None):
     if actor_id not in ALLOWED_APIFY_ACTORS:
@@ -5038,6 +6623,16 @@ def perform_batched_rest_scrape(platform, actor_id, common_input, identifiers, o
         identifiers = list(original_identifiers)
         skipped_count = 0
 
+    request_budget_guard = ensure_apify_budget_for_request(
+        platform,
+        common_input,
+        identifiers,
+        cancel_check=cancel_check,
+        progress_callback=progress_callback,
+    )
+    if not request_budget_guard.get("success"):
+        return request_budget_guard
+
     if progress_callback:
         progress_callback(
             "preparing",
@@ -5047,7 +6642,7 @@ def perform_batched_rest_scrape(platform, actor_id, common_input, identifiers, o
             **build_target_preview(identifiers),
         )
 
-    batch_size = get_apify_batch_size(platform)
+    batch_size = get_apify_batch_size(platform, common_input)
     batched_identifiers = chunk_list(identifiers, batch_size)
 
     aggregated_items = []
@@ -5058,6 +6653,7 @@ def perform_batched_rest_scrape(platform, actor_id, common_input, identifiers, o
     apify_runs = []
     apify_total_cost = 0.0
     has_apify_cost = False
+    abort_remaining_batches = False
 
     for batch_index, batch in enumerate(batched_identifiers, start=1):
         if cancel_check and cancel_check():
@@ -5067,9 +6663,11 @@ def perform_batched_rest_scrape(platform, actor_id, common_input, identifiers, o
         batch_items = []
         batch_attempt = 0
         batch_attempt_budget = get_apify_attempt_budget()
+        token_candidates = get_ordered_apify_token_candidates()
         tried_tokens = set()
         batch_completed_without_gap = False
         batch_total = len(batched_identifiers)
+        last_retry_strategy = None
 
         def forward_batch_progress(stage, message=None, done=None, total=None, **extra):
             if not progress_callback:
@@ -5079,7 +6677,7 @@ def perform_batched_rest_scrape(platform, actor_id, common_input, identifiers, o
                 return
 
             forwarded_message = message
-            if message and stage in {"apify_start", "apify_running", "downloading", "filtering"}:
+            if message and stage in {"apify_start", "apify_running", "recovering_remote_run", "waiting_remote_run", "downloading", "filtering"}:
                 forwarded_message = f"第 {batch_index}/{batch_total} 批：{message}"
 
             forwarded_done = batch_index - 1
@@ -5107,12 +6705,18 @@ def perform_batched_rest_scrape(platform, actor_id, common_input, identifiers, o
                 return build_cancelled_result()
 
             batch_attempt += 1
-            current_token = get_apify_token()
-            if current_token:
-                tried_tokens.add(current_token)
-
             batch_input = dict(common_input)
             set_scrape_identifiers(output_filename, batch_input, pending_identifiers)
+            preferred_tokens = [
+                token for token in token_candidates
+                if token not in tried_tokens
+            ] + [
+                token for token in token_candidates
+                if token in tried_tokens
+            ]
+            attempted_token = preferred_tokens[0] if preferred_tokens else None
+            if attempted_token:
+                tried_tokens.add(attempted_token)
 
             if progress_callback:
                 if batch_attempt == 1:
@@ -5120,10 +6724,8 @@ def perform_batched_rest_scrape(platform, actor_id, common_input, identifiers, o
                     message = f"正在处理第 {batch_index}/{len(batched_identifiers)} 批（{len(pending_identifiers)} 个）"
                 else:
                     stage = "batch_preparing"
-                    message = (
-                        f"第 {batch_index}/{len(batched_identifiers)} 批返回不完整，"
-                        f"已切换 token 重试剩余 {len(pending_identifiers)} 个"
-                    )
+                    retry_clause = "尝试其他 token" if last_retry_strategy == "rotated_token" else "继续使用当前策略"
+                    message = f"第 {batch_index}/{len(batched_identifiers)} 批上次返回不完整或失败，{retry_clause}重试剩余 {len(pending_identifiers)} 个"
                 progress_callback(
                     stage,
                     message,
@@ -5144,6 +6746,7 @@ def perform_batched_rest_scrape(platform, actor_id, common_input, identifiers, o
                 True,
                 forward_batch_progress,
                 cancel_check=cancel_check,
+                preferred_tokens=preferred_tokens,
             )
 
             if batch_result.get("cancelled"):
@@ -5159,10 +6762,13 @@ def perform_batched_rest_scrape(platform, actor_id, common_input, identifiers, o
 
             if not batch_result.get("success"):
                 batch_error = batch_result.get("error") or f"{platform} batch scrape failed"
-                next_token = rotate_apify_token(tried_tokens)
-                if next_token and batch_attempt < batch_attempt_budget:
-                    tried_tokens.add(next_token)
+                safe_to_retry = batch_result.get("safe_to_retry", True)
+                if safe_to_retry and batch_attempt < batch_attempt_budget:
+                    has_untried_tokens = any(token not in tried_tokens for token in token_candidates)
+                    last_retry_strategy = "rotated_token" if has_untried_tokens else "same_token"
                     continue
+                if not safe_to_retry:
+                    abort_remaining_batches = True
 
                 failed_batches.append({
                     "batch_index": batch_index,
@@ -5171,6 +6777,9 @@ def perform_batched_rest_scrape(platform, actor_id, common_input, identifiers, o
                     "error": batch_error,
                     "attempts": batch_attempt,
                     "attempt_budget": batch_attempt_budget,
+                    "safe_to_retry": bool(safe_to_retry),
+                    "error_code": batch_result.get("error_code"),
+                    "apify_run_id": batch_result.get("apify_run_id"),
                 })
                 if progress_callback:
                     progress_callback(
@@ -5202,9 +6811,9 @@ def perform_batched_rest_scrape(platform, actor_id, common_input, identifiers, o
                 batch_completed_without_gap = True
                 break
 
-            next_token = rotate_apify_token(tried_tokens)
-            if next_token and batch_attempt < batch_attempt_budget:
-                tried_tokens.add(next_token)
+            if batch_attempt < batch_attempt_budget:
+                has_untried_tokens = any(token not in tried_tokens for token in token_candidates)
+                last_retry_strategy = "rotated_token" if has_untried_tokens else "same_token"
                 pending_identifiers = missing_identifiers
                 continue
 
@@ -5282,6 +6891,9 @@ def perform_batched_rest_scrape(platform, actor_id, common_input, identifiers, o
                 batch_size=len(batch),
                 **build_target_preview(batch),
             )
+
+        if abort_remaining_batches:
+            break
 
     if len(aggregated_items) == 0:
         preserved_result = build_preserved_failure_response(
@@ -5423,7 +7035,8 @@ def perform_scrape(platform, data, progress_callback=None, cancel_check=None):
         if cancel_check and cancel_check():
             return build_cancelled_result()
 
-        if len(identifiers) <= 5:
+        max_direct_batch_size = get_apify_batch_size("youtube", common_input)
+        if len(identifiers) <= max_direct_batch_size:
             input_data = dict(common_input)
             if mode == "search":
                 input_data["searchQueries"] = identifiers
@@ -5455,7 +7068,17 @@ def perform_scrape(platform, data, progress_callback=None, cancel_check=None):
             identifiers = list(original_identifiers)
             skipped_count = 0
 
-        batched_identifiers = chunk_list(identifiers, 5)
+        request_budget_guard = ensure_apify_budget_for_request(
+            "youtube",
+            common_input,
+            identifiers,
+            cancel_check=cancel_check,
+            progress_callback=progress_callback,
+        )
+        if not request_budget_guard.get("success"):
+            return request_budget_guard
+
+        batched_identifiers = chunk_list(identifiers, get_apify_batch_size("youtube", common_input))
         aggregated_items = []
         aggregate_success_count = 0
         failed_batches = []
@@ -5463,6 +7086,7 @@ def perform_scrape(platform, data, progress_callback=None, cancel_check=None):
         apify_runs = []
         apify_total_cost = 0.0
         has_apify_cost = False
+        abort_remaining_batches = False
 
         for batch_index, batch in enumerate(batched_identifiers, start=1):
             if cancel_check and cancel_check():
@@ -5500,11 +7124,17 @@ def perform_scrape(platform, data, progress_callback=None, cancel_check=None):
 
             if not batch_result.get("success"):
                 batch_error = batch_result.get("error") or "YouTube batch scrape failed"
+                safe_to_retry = batch_result.get("safe_to_retry", True)
+                if not safe_to_retry:
+                    abort_remaining_batches = True
                 failed_batches.append({
                     "batch_index": batch_index,
                     "batch_total": len(batched_identifiers),
                     "identifiers": batch,
                     "error": batch_error,
+                    "safe_to_retry": bool(safe_to_retry),
+                    "error_code": batch_result.get("error_code"),
+                    "apify_run_id": batch_result.get("apify_run_id"),
                 })
                 if progress_callback:
                     progress_callback(
@@ -5517,6 +7147,8 @@ def perform_scrape(platform, data, progress_callback=None, cancel_check=None):
                         failed_count=len(failed_batches),
                         **build_target_preview(batch),
                     )
+                if abort_remaining_batches:
+                    break
                 continue
 
             batch_items = batch_result.get("raw_items") or []
@@ -5562,6 +7194,9 @@ def perform_scrape(platform, data, progress_callback=None, cancel_check=None):
                     **build_target_preview(batch),
                     partial_result=partial_result,
                 )
+
+            if abort_remaining_batches:
+                break
 
         if aggregate_success_count == 0:
             preserved_result = build_preserved_failure_response(
@@ -6457,7 +8092,35 @@ def start_scrape_job():
     if apify_config_error:
         return apify_config_error
 
-    job = create_job("scrape", platform=platform, message="采集任务已创建")
+    payload_signature = build_job_payload_signature("scrape", platform, data)
+    duplicate_job = find_active_job("scrape", platform=platform, payload_signature=payload_signature)
+    if duplicate_job:
+        duplicate_job["message"] = duplicate_job.get("message") or "已有相同采集任务正在执行"
+        return jsonify({
+            "success": True,
+            "duplicate_request": True,
+            "job": duplicate_job,
+        })
+
+    conflicting_job = find_active_job("scrape", platform=platform)
+    if conflicting_job:
+        platform_label = {"tiktok": "TikTok", "instagram": "Instagram", "youtube": "YouTube"}.get(platform, platform)
+        return jsonify({
+            "success": False,
+            "error_code": "SCRAPE_JOB_ALREADY_RUNNING",
+            "error": (
+                f"{platform_label} 当前已有采集任务在执行。"
+                f"为避免重复扣费与覆盖同平台结果，请等待当前任务完成或先取消后再发起新的请求。"
+            ),
+            "job": conflicting_job,
+        }), 409
+
+    job = create_job(
+        "scrape",
+        platform=platform,
+        message="采集任务已创建",
+        payload_signature=payload_signature,
+    )
     start_background_job(job, lambda progress_callback, cancel_check: perform_scrape(platform, data, progress_callback, cancel_check))
     return jsonify({"success": True, "job": get_job(job["id"])})
 

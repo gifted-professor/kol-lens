@@ -27,7 +27,7 @@
 | `language` | `string` | Language | 语言代码，当前 Instagram 主链路优先用于英语判断。 | `en` | 主链路 |
 | `platform` | `string` | Platform | 平台名，用于把行路由到 Instagram / TikTok / YouTube；归一化后会保存为小写内部值。 | `instagram` | 未使用 |
 | `followers` | `number` | Followers | 上传表粉丝数，当前主链路未使用。 | `45663` | 未使用 |
-| `avg_views` | `number` | Avg. Views | 上传表平均播放量，当前主链路未使用。 | `298264` | 未使用 |
+| `avg_views` | `number` | Avg. Views | 上传表平均播放量，当前主链路不作为系统实算值使用；审计导出里会保留为 upload_avg_views，并与系统运行期统计字段分开。 | `298264` | 未使用 |
 | `avg_likes` | `number` | Avg. Likes | 上传表平均点赞量，当前主链路未使用。 | `5347` | 未使用 |
 | `avg_comments` | `number` | Avg. Comments | 上传表平均评论量，当前主链路未使用。 | `47` | 未使用 |
 | `avg_collects` | `number` | Avg. Collects | 上传表平均收藏量，当前主链路未使用。 | `0` | 未使用 |

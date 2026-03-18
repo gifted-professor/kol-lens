@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+frontend/node_modules/
 .pnp
 .pnp.js
 
@@ -7,10 +8,10 @@ node_modules/
 .env
 .env.local
 .env.*.local
+!.env.example
 
-# Python
+# Python caches and virtualenvs
 __pycache__/
-venv_backup*/
 *.py[cod]
 *.pyo
 *.pyd
@@ -18,14 +19,30 @@ venv_backup*/
 venv/
 env/
 .venv/
+backend/.venv/
+backend/.venv*/
+backend/venv/
+backend/venv_backup*/
+venv_backup*/
 *.egg-info/
+
+# Build output
 dist/
 build/
+frontend/dist/
+frontend/build/
 
-# Logs
-*.log
-backend_server.log
+# Runtime data, exports, caches, temp artifacts
+data/
+temp/
 logs/
+backend_server.log
+*.tmp
+*.bak
+/*.xlsx
+/*.csv
+/*.jsonl
+/*.log
 
 # OS
 .DS_Store
@@ -36,15 +53,3 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
-
-# Build output
-frontend/dist/
-frontend/build/
-
-# Temp files
-temp/
-*.tmp
-
-# Test data (optional - remove if you want to track these)
-# test_*.xlsx
-# test_*.json

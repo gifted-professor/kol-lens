@@ -5,10 +5,10 @@
 
 ## Build, Test, and Development Commands
 - `cd frontend && npm run dev -- --host 127.0.0.1 --port 5173`: start the frontend locally.
-- `backend/venv/bin/python backend/app.py`: start the Flask backend on port `5001`.
+- `backend/.venv/bin/python backend/app.py`: start the Flask backend on port `5001`.
 - `cd frontend && npm run build`: produce a production build in `frontend/dist/`.
 - `cd frontend && npm run lint`: run ESLint on the frontend codebase.
-- `backend/venv/bin/python scripts/test_openai_vision.py`: verify the proxy vision API connection.
+- `backend/.venv/bin/python scripts/test_openai_vision.py`: verify the proxy vision API connection.
 
 ## Coding Style & Naming Conventions
 Use 4 spaces in Python and 2 spaces in JSX/CSS when editing existing frontend files. Prefer descriptive snake_case for Python functions and camelCase for React state, handlers, and props. Keep Flask routes small and move reusable logic into helper functions. Frontend follows the existing inline-style-heavy pattern in `App.jsx`; do not introduce a new styling system unless requested. ESLint is configured in `frontend/eslint.config.js`; fix lint warnings before handing off.
@@ -25,3 +25,8 @@ Git history is not available in this workspace, so use clear imperative commit m
 
 ## Security & Configuration Tips
 Do not commit real API keys. Prefer `OPENAI_API_KEY` or other environment variables over hardcoded secrets. Keep generated virtual environments (`backend/venv`, backups) and large exports out of reviews unless the task is environment repair.
+
+## Agent Interaction Defaults
+Default to Simplified Chinese for all user-facing explanations, questions, summaries, and progress updates in this repository. Keep command names, file paths, code identifiers, API field names, and commit messages in English unless the user explicitly requests otherwise.
+
+When the user uses `$workflow`, treat it as the primary task router for this repository. Use it to decide whether work should enter discussion/planning or go straight to execution. Prefer `xhigh` model intensity for planning, architecture, template, and rule-definition tasks; prefer `high` for implementation, bugfix, and bounded execution tasks. If a phase is already active, do not assume continuation unless the user explicitly says to continue that phase.

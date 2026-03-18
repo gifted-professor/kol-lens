@@ -77,6 +77,65 @@ function formatReviewReason(reason) {
   return reason;
 }
 
+function normalizeProfileIdentifier(value) {
+  const text = String(value || '').trim().toLowerCase();
+  if (!text) return '';
+
+  const tiktokMatch = text.match(/tiktok\.com\/@([^/?#]+)/i);
+  if (tiktokMatch?.[1]) return tiktokMatch[1].trim().toLowerCase().replace(/^@+/, '');
+
+  const instagramMatch = text.match(/instagram\.com\/([^/?#]+)/i);
+  if (instagramMatch?.[1]) return instagramMatch[1].trim().toLowerCase().replace(/^@+/, '');
+
+  const youtubeMatch = text.match(/youtube\.com\/(?:@|channel\/|c\/|user\/)([^/?#]+)/i);
+  if (youtubeMatch?.[1]) return youtubeMatch[1].trim().toLowerCase().replace(/^@+/, '');
+
+  return text.replace(/^@+/, '');
+}
+
+function findFailedBatchForProfile(item, failedBatches = []) {
+  if (!item || item.status !== 'Missing' || !Array.isArray(failedBatches) || failedBatches.length === 0) {
+    return null;
+  }
+
+  const candidates = [
+    item.username,
+    item.profile_url,
+    item.upload_metadata?.handle,
+    item.upload_metadata?.url,
+  ]
+    .map((value) => normalizeProfileIdentifier(value))
+    .filter(Boolean);
+
+  if (candidates.length === 0) return null;
+
+  return failedBatches.find((batch) => {
+    const identifiers = Array.isArray(batch?.identifiers) ? batch.identifiers : [];
+    return identifiers.some((value) => candidates.includes(normalizeProfileIdentifier(value)));
+  }) || null;
+}
+
+function formatFailedBatchReason(batch) {
+  if (!batch) return '';
+  const batchIndex = typeof batch.batch_index === 'number' ? batch.batch_index : null;
+  const batchTotal = typeof batch.batch_total === 'number' ? batch.batch_total : null;
+  const errorText = String(batch.error || '').trim();
+
+  if (batchIndex && batchTotal && errorText) {
+    return `Apify 第 ${batchIndex}/${batchTotal} 批失败：${errorText}`;
+  }
+  if (errorText) return `Apify 批次失败：${errorText}`;
+  if (batchIndex && batchTotal) return `Apify 第 ${batchIndex}/${batchTotal} 批失败`;
+  return 'Apify 批次失败';
+}
+
+function buildFailedBatchSummary(failedBatches = []) {
+  if (!Array.isArray(failedBatches) || failedBatches.length === 0) return '';
+  const batchLabel = failedBatches.length === 1 ? '1 个失败批次' : `${failedBatches.length} 个失败批次`;
+  const firstReason = formatFailedBatchReason(failedBatches[0]);
+  return firstReason ? `当前有 ${batchLabel}。${firstReason}` : `当前有 ${batchLabel}。`;
+}
+
 function formatVisualReviewSummary(review) {
   if (!review || review.success === false) {
     return review?.error || '';
@@ -203,7 +262,20 @@ function buildResultStateGuidance({
 }) {
   if (!result) return [];
 
+  const showingPreviousResultWhileRunning = Boolean(scrapeRunning && !result.is_partial);
   const guidance = [];
+
+  if (showingPreviousResultWhileRunning) {
+    guidance.push({
+      key: 'running-previous-result',
+      tone: 'info',
+      label: '运行中',
+      title: '本次抓取仍在执行，当前只是暂时显示上一次可用结果',
+      description: '这不代表本次任务已经失败。页面会先保留上一份可查看结果，等本次返回首批数据后再自动切到新结果。',
+      nextAction: '请以上方任务进度为准，等待首批结果返回；当前下方数据仅供临时参考。',
+    });
+    return guidance;
+  }
 
   if (result.is_partial) {
     guidance.push({
@@ -441,6 +513,8 @@ function formatJobStage(stage) {
     preparing: '准备中',
     provider_start: '提交任务',
     provider_running: 'Apify 运行中',
+    recovering_remote_run: '恢复远端运行',
+    waiting_remote_run: '等待远端运行',
     downloading: '下载结果',
     filtering: '初筛中',
     batch_preparing: '准备批次',
@@ -474,6 +548,8 @@ function getJobProgressSnapshot(job) {
     preparing: { done: 0, total: 4 },
     provider_start: { done: 1, total: 4 },
     provider_running: { done: 1, total: 4 },
+    recovering_remote_run: { done: 2, total: 4 },
+    waiting_remote_run: { done: 2, total: 4 },
     downloading: { done: 2, total: 4 },
     filtering: { done: 3, total: 4 },
     completed: { done: 4, total: 4 },
@@ -489,6 +565,8 @@ function getJobProgressSnapshot(job) {
       batch_preparing: 0.08,
       provider_start: 0.18,
       provider_running: 0.45,
+      recovering_remote_run: 0.55,
+      waiting_remote_run: 0.6,
       downloading: 0.72,
       filtering: 0.9,
       batch_completed: 1,
@@ -936,7 +1014,7 @@ function App() {
 
   // Form states
   const [tiktokProfiles, setTiktokProfiles] = useState('');
-  const [tiktokLimit, setTiktokLimit] = useState(50);
+  const [tiktokLimit, setTiktokLimit] = useState(20);
   const [tiktokOptions, setTiktokOptions] = useState({
     downloadVideos: false,
     downloadCovers: true,
@@ -1783,6 +1861,8 @@ function App() {
               const cardKey = getProfileReviewKey(item, index);
               const expanded = expandedCards.has(cardKey);
               const tone = getProfileCardTone(item.status, item.soft_flags);
+              const matchedFailedBatch = findFailedBatchForProfile(item, resultFailedBatches);
+              const failedBatchReason = formatFailedBatchReason(matchedFailedBatch);
               const fullReason = formatReviewReason(item.reason);
               const summaryReason = formatReasonSummary(item);
               const showExpansion = needsExpansion(item);
@@ -1895,6 +1975,12 @@ function App() {
                         </button>
                       )}
                     </motion.div>
+                  )}
+
+                  {failedBatchReason && (
+                    <div className="mt-3 rounded-2xl border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-sm leading-relaxed text-amber-900">
+                      {failedBatchReason}
+                    </div>
                   )}
 
                   <div className="mt-4 flex items-center text-sm">
@@ -2026,15 +2112,26 @@ function App() {
     { key: 'export-handoff', label: '导出交接' },
   ];
   const activeResultTabLabel = resultTabOptions.find((item) => item.key === activeResultTab)?.label || '概览';
+  const showingPreviousResultWhileRunning = Boolean(scrapeRunning && result && !result.is_partial);
   const resultWorkspaceStatus = result?.is_partial
     ? '增量结果'
-    : result?.used_fallback
+    : showingPreviousResultWhileRunning
+      ? '采集中（沿用上次结果）'
+      : result?.used_fallback
       ? '回退快照'
       : result?.stale_result
         ? '旧结果'
         : result?.cached
           ? '缓存结果'
           : '最新完成结果';
+  const resultFailedBatches = Array.isArray(result?.failed_batches) ? result.failed_batches : [];
+  const failedBatchSummary = buildFailedBatchSummary(resultFailedBatches);
+  const resultBannerMessage = showingPreviousResultWhileRunning
+    ? (scrapeJob?.message || '正在等待本次任务返回首批结果。')
+    : result?.message;
+  const resultBannerToneClassName = showingPreviousResultWhileRunning
+    ? 'text-sky-700'
+    : (result?.cached ? 'text-amber-700' : 'text-emerald-700');
   const parsedTemplateSteps = Array.isArray(templateResult?.parsed_sop?.steps) ? templateResult.parsed_sop.steps : [];
   const availableTemplatePlatforms = ['tiktok', 'instagram', 'youtube'].filter(
     (platform) => templateResult?.field_match_report?.platforms?.[platform],
@@ -2972,7 +3069,7 @@ function App() {
                     </span>
                     <span>
                       {scrapeRunning
-                        ? (result.is_partial ? '当前已返回部分结果' : '当前显示上一次结果')
+                        ? (result.is_partial ? '当前已返回部分结果' : '本次任务运行中，暂用上一次结果')
                         : (result.cached ? '已加载缓存结果' : '采集成功')}
                     </span>
                   </div>
@@ -2982,7 +3079,9 @@ function App() {
                   <p className="mt-3 text-sm leading-6 text-gray-500 md:text-base">
                     {result.is_partial
                       ? `当前采集仍在进行，下面展示的是已经返回的 ${activeResultPlatform} 部分结果。`
-                      : result.used_fallback
+                      : showingPreviousResultWhileRunning
+                        ? `当前采集仍在进行，下面暂时保留上一次可用的 ${activeResultPlatform} 结果供查看；这不代表本次任务已失败。`
+                        : result.used_fallback
                         ? `当前页面展示的是后端自动回退到的最近一次可用 ${activeResultPlatform} 结果。`
                         : result.stale_result
                           ? `当前页面展示的是最近一次可用但已标记为旧的 ${activeResultPlatform} 结果。`
@@ -2990,10 +3089,15 @@ function App() {
                             ? `当前采集仍在进行，下面显示的是最近一次可继续操作的 ${activeResultPlatform} 结果。`
                             : (result.cached ? `当前缓存结果共 ${result.count} 条数据。` : `共采集到 ${result.count} 条数据。`)}
                   </p>
-                  {result.message && (
-                    <p className={`mt-3 text-sm font-medium ${result.cached ? 'text-amber-700' : 'text-emerald-700'}`}>
-                      {result.message}
+                  {resultBannerMessage && (
+                    <p className={`mt-3 text-sm font-medium ${resultBannerToneClassName}`}>
+                      {showingPreviousResultWhileRunning ? `本次任务进度：${resultBannerMessage}` : resultBannerMessage}
                     </p>
+                  )}
+                  {failedBatchSummary && (
+                    <div className="mt-3 max-w-3xl rounded-2xl border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-sm leading-6 text-amber-900">
+                      {failedBatchSummary}
+                    </div>
                   )}
                   <div className="mt-4 flex flex-wrap gap-2">
                     {result.is_partial && (
@@ -3001,22 +3105,27 @@ function App() {
                         部分结果
                       </span>
                     )}
-                    {result.cached && (
+                    {showingPreviousResultWhileRunning ? (
+                      <span className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-medium text-sky-800">
+                        沿用上次结果
+                      </span>
+                    ) : null}
+                    {!showingPreviousResultWhileRunning && result.cached && (
                       <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
                         缓存结果
                       </span>
                     )}
-                    {result.stale_result && (
+                    {!showingPreviousResultWhileRunning && result.stale_result && (
                       <span className="inline-flex items-center rounded-full border border-amber-200 bg-white px-3 py-1 text-xs font-medium text-amber-800">
                         旧结果
                       </span>
                     )}
-                    {result.used_fallback && (
+                    {!showingPreviousResultWhileRunning && result.used_fallback && (
                       <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800">
                         回退快照
                       </span>
                     )}
-                    {!result.is_partial && !result.cached && !result.stale_result && !result.used_fallback && (
+                    {!result.is_partial && !showingPreviousResultWhileRunning && !result.cached && !result.stale_result && !result.used_fallback && (
                       <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800">
                         最新完成结果
                       </span>

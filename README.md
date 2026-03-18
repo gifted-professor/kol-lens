@@ -22,7 +22,36 @@ Phase 1 之后，本地运行的凭证来源按下面的规则固定：
 
 推荐把本地需要的变量放进你自己的 shell 配置或未提交的 `.env` 载入流程，并参考根目录的 `.env.example`。
 当前仓库也支持后端在启动时自动读取根目录未提交的 `.env.local`；如果你想要一个固定填写地址，直接编辑根目录 `.env.local` 即可。
-如果你有多个 Apify token，可以把主 token 写在 `APIFY_TOKEN`，其余备份 token 用英文逗号写进 `APIFY_BACKUP_TOKENS`。当后端检测到重试/轮换时，会在这个 env token 池里切换，不再被单个环境变量固定住。
+如果你有多个 Apify token，可以把主 token 写在 `APIFY_TOKEN`，其余付费备份 token 用英文逗号写进 `APIFY_BACKUP_TOKENS`，免费兜底 token 写进 `APIFY_FREE_TOKENS`。当前固定策略是 `APIFY_TOKEN_POOL_STRATEGY=paid_first_free_fallback`，也就是 `paid tokens run first and free tokens only receive fallback overflow`。免费 token 还会额外受 `APIFY_FREE_TOKEN_HARD_LIMIT_USD=5.0` 的本地硬上限约束：即使远端额度更高，本地规划与 reservation 也只会把它当成最多 5 USD 的可用池。
+
+当前默认的 Apify 分批与重试策略：
+
+- `TIKTOK_BATCH_SIZE` 默认是 `20`
+- `INSTAGRAM_BATCH_SIZE` 默认是 `50`
+- `YOUTUBE_BATCH_SIZE` 默认是 `5`
+- `APIFY_MAX_BATCH_ATTEMPTS` 默认是 `3`
+- `APIFY_BUDGET_SAFETY_MULTIPLIER` 默认是 `1.1`
+- `APIFY_BUDGET_BUFFER_USD` 默认是 `0.1`
+- `APIFY_BUDGET_RESERVATION_TTL_SECONDS` 默认是 `21600`
+- `APIFY_RUN_GUARD_TTL_SECONDS` 默认是 `1800`
+- `APIFY_TIKTOK_COST_PER_RESULT_USD` 默认是 `0.004`
+- `APIFY_INSTAGRAM_COST_PER_RESULT_USD` 默认是 `0.0027`
+- `APIFY_YOUTUBE_COST_PER_RESULT_USD` 默认是 `0.004`
+
+说明：
+
+- 启动抓取前，后端会先调用 Apify `users/me/limits` 查询当前 token 池的月度额度，避免明知余额不足还把任务提交出去。
+- 若整次请求的预估费用加上安全系数后已经超过当前 token 池总剩余额度，后端会直接拒绝本次抓取，而不是等 Actor 跑到一半才炸掉。
+- 当某一批返回不完整时，后端会优先切换备用 token；如果本地只有单个 token，也会在同一 token 下继续重试缺失账号，直到达到 attempt budget。
+- 批次在真正提交到 Apify 之前，会先按 `paid_first_free_fallback` token pool 做本地规划；只有当某个 token 的安全预留额度足够时，该批次才会分配给它。
+- 当当前 token 剩余额度不足以覆盖下一批的预估费用时，后端会先尝试切到备份 token，再决定是否继续执行。
+- 同一平台同一时间只允许一个 scrape job；如果重复提交了完全相同的 payload，后端会直接复用已有 job，避免重复扣费和覆盖同平台中间产物。
+- 后端现在会对运行中的批次做 token 额度 reservation；并发 job 不会再把同一笔“看起来还没花出去”的额度重复分配两次。
+- 一旦某个 Apify run 已经成功创建，但本地在轮询状态或下载 dataset 时失去确定性，系统会 fail-closed：停止自动重试，也不会自动再次提交这一批，避免因为网络抖动造成双重扣费。
+- Apify `POST /runs` 提交现在默认不再走自动重试；如果提交阶段本身出现不确定异常，系统会为这一批写入一个短期 guard，在 TTL 内阻止相同批次再次自动提交，避免“提交时抖一下”造成双倍扣费。
+- existing guarded runs are recovered before duplicate submission；如果 guard 里已经记录了 `run_id` + `dataset_id`，后端会优先尝试 re-attach 这个远端 run，而不是把 guard 只当成“禁止再次提交”的死锁。
+- 当采集 job 进入 `recovering_remote_run` 或 `waiting_remote_run` 时，表示远端 run 仍可恢复，前端应继续把它视为运行中，而不是终态失败；只有远端明确进入 `FAILED` / `ABORTED` / `TIMED-OUT` 或恢复已不可行时，才会落到 terminal failure。
+- Phase 7 的验证基线要求继续保持低成本：verification for this phase should stay low-cost and mock-based，避免为了回归测试去真实消耗付费 Apify credits。
 
 本地访问默认值也在 Phase 1 固定下来：
 

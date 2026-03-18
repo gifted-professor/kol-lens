@@ -47,7 +47,7 @@
 | 平台 | 当前主链路函数 | 说明 |
 | :--- | :--- | :--- |
 | TikTok | `check_tiktok_tapo` | 当前走 Tapo 定制版，不是旧版通用禁词逻辑 |
-| Instagram | `check_instagram_custom` | 当前优先读取上传表的地区/语言字段，再回退 API 资料字段进行美国/加拿大 + 英语判断 |
+| Instagram | `check_instagram_custom` | 当前优先读取上传表的地区字段，再回退 API 资料字段进行美国地区判断，并叠加 30 天活跃度 |
 | YouTube | `check_youtube` | 当前走通用版文本 / 外链 / 恰饭浓度逻辑 |
 
 这三条规则才是当前批量初筛真正生效的逻辑，PRD 必须以它们为准。

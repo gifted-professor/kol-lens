@@ -183,7 +183,7 @@
         "excel_columns": [
           "Avg. Views"
         ],
-        "description": "\u4e0a\u4f20\u8868\u5e73\u5747\u64ad\u653e\u91cf\uff0c\u5f53\u524d\u4e3b\u94fe\u8def\u672a\u4f7f\u7528\u3002",
+        "description": "\u4e0a\u4f20\u8868\u5e73\u5747\u64ad\u653e\u91cf\uff0c\u5f53\u524d\u4e3b\u94fe\u8def\u4e0d\u4f5c\u4e3a\u7cfb\u7edf\u5b9e\u7b97\u503c\u4f7f\u7528\uff1b\u5ba1\u8ba1\u5bfc\u51fa\u91cc\u4f1a\u4fdd\u7559\u4e3a upload_avg_views\uff0c\u5e76\u4e0e\u7cfb\u7edf\u8fd0\u884c\u671f\u7edf\u8ba1\u5b57\u6bb5\u5206\u5f00\u3002",
         "example": 298264,
         "used_in_active_screening": false,
         "used_in_any_screening_code": false,

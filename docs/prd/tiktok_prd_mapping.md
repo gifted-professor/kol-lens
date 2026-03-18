@@ -28,23 +28,17 @@ Apify 返回的 TikTok 结果是视频数组。每条视频记录里带有本条
 | 步骤 | JSON 字段路径 | 当前实现 | 结果 |
 | :--- | :--- | :--- | :--- |
 | 无数据校验 | 根数组 | 数据为空时直接返回 `未抓取到数据` | Reject |
+| 活跃度 | 最近一条 `createTimeISO` | 最近一条视频距今超过 30 天 | Reject |
 | 播放量门槛 | `playCount`（按最近 50 条） | 最近 50 条视频的平均播放量和中位数都必须 `> 10000` | 任一不达标则 Reject |
-| 美妆内容占比 | `text`, `hashtags[].name`（按最近 100 条） | 命中美妆关键词的视频条数占比 `> 50%` 时 | Reject |
-| 视觉封面提取 | 最近 10 条 | 普通视频取 `videoMeta.originalCoverUrl` 或 `videoMeta.coverUrl`；图文轮播取 `slideshowImageLinks[0].tiktokLink` | Pass |
-
-### 当前美妆排除关键词
-
-当前代码中用于 Tapo 路径的关键词包括：
-
-`makeup`, `skincare`, `foundation`, `concealer`, `mascara`, `lipstick`, `eyeshadow`, `blush`, `contour`, `highlighter`, `primer`, `serum`, `moisturizer`, `cleanser`, `toner`, `beauty routine`, `grwm`, `get ready with me`, `beauty hack`, `glow up`, `skin care`, `makeup tutorial`, `beauty tip`, `cosmetic`, `nail art`, `lash`, `brow`, `lip gloss`, `beauty review`, `haul`, `swatch`
+| 视觉封面提取 | 最近 18 条 | 普通视频取 `videoMeta.originalCoverUrl` 或 `videoMeta.coverUrl`；图文轮播取 `slideshowImageLinks[0].tiktokLink` | Pass |
 
 ### 当前主链路未执行的项
 
 当前 Tapo 主链路没有执行下列通用规则：
 
-- 活跃度 30 天校验
 - `bioLink` 外链禁词校验
 - 简介 / 文案 / 标签的通用禁词排雷
+- 文案 / 标签的关键词占比排除（当前新模板未启用）
 
 如果 TikTok 业务希望重新启用这些规则，需要切回或合并 `check_tiktok`。
 
@@ -56,20 +50,19 @@ Apify 返回的 TikTok 结果是视频数组。每条视频记录里带有本条
 
 通过时会保留：
 
-- `covers`：最多 10 张封面
+- `covers`：最多 18 张封面
 - `latest_post_time`
 - `stats.avg_views`
 - `stats.median_views`
 - `stats.video_count`
-- `stats.beauty_ratio`
 
 ### Reject
 
 常见拒绝原因包括：
 
 - `未抓取到数据`
+- `近 30 天无更新`
 - `播放量不达标（均值 X，中位数 Y，门槛 10000）`
-- `美妆内容占比过高（XX%），不符合智能家居场景`
 
 ### Missing
 
@@ -110,11 +103,11 @@ Apify 返回的 TikTok 结果是视频数组。每条视频记录里带有本条
 
 TikTok 初筛通过后，会把封面交给视觉模型做第二轮判断。当前视觉阶段主要负责：
 
-1. 画面环境是否整洁、明亮、有生活感
-2. 是否过度商业化、摆拍感过强
-3. 是否存在大面积纹身、过度性感暴露
-4. 是否是满屏晒娃型账号
-5. 是否属于优先垂类，如医生、皮肤科、瑜伽、普拉提、职场女性等
+1. 是否命中至少 1 类目标特征：`Speaking-led`、`真实生活场景`、`孩子互动`、`产品展示`、`户外庭院`、`宠物互动`
+2. 是否出现明显绿幕 / 虚拟背景
+3. 是否多人跳舞内容占比过高（`> 30%`）
+4. 是否自拍 / 情侣出镜内容占比过高（`> 70%`）
+5. 明确禁止使用年龄、种族、民族等受保护属性做自动判断
 
 ---
 

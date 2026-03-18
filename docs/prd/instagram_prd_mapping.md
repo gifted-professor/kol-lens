@@ -28,21 +28,19 @@ Apify 返回的 Instagram 结果通常是单个博主对象，或仅包含一个
 | 步骤 | JSON 字段路径 | 当前实现 | 结果 |
 | :--- | :--- | :--- | :--- |
 | 无数据校验 | 根对象 / 数组 | 数据为空时直接返回 `未抓取到数据` | Reject |
-| 地区线索 | 上传表 `Region`；若缺失则回退 `biography`, `addressStreet`, `cityName`, `location`, `businessAddressJson` | 优先读取上传表 `Region`；命中 `US/CA` 或对应英文全称即通过。若上传表无值，再将 API 资料字段合并后统一小写匹配美国/加拿大国家、州、省、主要城市关键词与正则 | 未命中则 Reject |
-| 语言检测 | 上传表 `Language`；若缺失则回退 `biography` | 优先读取上传表 `Language`；命中 `en/eng/english` 视为英语。若上传表无值，再基于简介做简单英文检测：字母中 ASCII 占比 `< 0.6` 视为“非英语为主” | Reject |
+| 地区线索 | 上传表 `Region`；若缺失则回退 `biography`, `addressStreet`, `cityName`, `location`, `businessAddressJson` | 优先读取上传表 `Region`；命中 `US/USA/United States` 即通过。若上传表无值，再将 API 资料字段合并后统一小写匹配美国国家、州、主要城市关键词与正则 | 未命中则 Reject |
 | 帖子可用性 | `latestPosts` | 无可用帖子 | Reject |
 | 活跃度 | `latestPosts[].timestamp` | 按最近一条帖子时间判断；距今超过 30 天 | Reject |
-| 关系类排除 | `latestPosts[].caption`（前 100 条） | 命中任一关键词：`partner`, `boyfriend`, `girlfriend`, `husband`, `wife` | Reject |
-| 视觉封面提取 | `latestPosts[].displayUrl`（前 10 条） | 提取封面交给视觉复核 | Pass |
+| 视觉封面提取 | `latestPosts[].displayUrl`（前 18 条） | 提取封面交给视觉复核 | Pass |
 
 ### 地区判定补充说明
 
-当前“美国/加拿大地区”是规则匹配，不是大模型判断。匹配来源包括：
+当前“美国地区”是规则匹配，不是大模型判断。匹配来源包括：
 
-- 上传表 `Region`：优先级最高，支持 `US`、`CA` 及对应英文全称
-- 国家级关键词：`usa`, `united states`, `canada`, `canadian`
-- 美国州名、加拿大省名
-- 常见北美城市/区域名，如 `nyc`, `los angeles`, `toronto`, `vancouver`
+- 上传表 `Region`：优先级最高，支持 `US`、`USA` 及对应英文全称
+- 国家级关键词：`usa`, `united states`, `american`
+- 美国州名
+- 常见美国城市/区域名，如 `nyc`, `los angeles`, `seattle`
 - 正则兜底：`U.S.A.`、`United States` 的带点/带空格写法
 
 这意味着如果上传表已明确提供 `Region`，即使 API 资料里没有地区字段，也能直接参与初筛；反之，如果上传表和 API 资料都缺地区线索，仍会被地区层挡掉。
@@ -55,22 +53,19 @@ Apify 返回的 Instagram 结果通常是单个博主对象，或仅包含一个
 
 通过时会保留：
 
-- `covers`：最多 10 张 `displayUrl`
+- `covers`：最多 18 张 `displayUrl`
 - `latest_post_time`
-- `reason`：形如“地区与语言符合（已融合上传表与 API 数据）；未命中情侣关系词；已提取 X 张封面供视觉复核”
+- `reason`：形如“地区符合（美国）；近 30 天有更新；已提取 X 张封面供视觉复核”
 
 ### Reject
 
 常见拒绝原因包括：
 
 - `未抓取到数据`
-- `上传表 Region 未命中美国/加拿大`
-- `简介或资料字段未识别到美国/加拿大地区线索`
-- `上传表 Language 未命中英语`
-- `内容语言可能非英语为主`
+- `上传表 Region 未命中美国`
+- `简介或资料字段未识别到美国地区线索`
 - `账号没有可用帖子`
 - `近 30 天无更新`
-- `文案命中情侣关系词 "<keyword>"`
 
 ### Missing
 
@@ -112,13 +107,13 @@ Apify 返回的 Instagram 结果通常是单个博主对象，或仅包含一个
 
 ## 视觉复核阶段
 
-初筛通过后，Instagram 会把封面图交给视觉模型做第二轮判断。当前视觉阶段主要负责：
+初筛通过后，Instagram 会把封面图交给视觉模型做第二轮判断。当前视觉阶段与 TikTok Tapo 路径对齐，主要负责：
 
-1. 画面环境是否整洁、明亮、有生活感
-2. 是否过度商业化、摆拍感过强
-3. 是否存在大面积纹身、过度性感暴露
-4. 是否是满屏晒娃型账号
-5. 是否属于优先垂类，如医生、皮肤科、瑜伽、普拉提、职场女性等
+1. 是否命中至少 1 类目标特征：`Speaking-led`、`真实生活场景`、`孩子互动`、`产品展示`、`户外庭院`、`宠物互动`
+2. 是否出现明显绿幕 / 虚拟背景
+3. 是否多人跳舞内容占比过高（`> 30%`）
+4. 是否自拍 / 情侣出镜内容占比过高（`> 70%`）
+5. 明确禁止使用年龄、种族、民族等受保护属性做自动判断
 
 ---
 
