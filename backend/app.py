@@ -1456,7 +1456,11 @@ def schedule_tiktok_cover_cache_warm(platform, scraped_items, profile_reviews):
                 reviews_snapshot = copy.deepcopy(profile_reviews)
                 print(f"[Cover Cache] background warm-up started for {len(reviews_snapshot)} TikTok reviews")
                 hydrated_reviews = hydrate_tiktok_cover_paths(items_snapshot, reviews_snapshot)
-                save_profile_reviews(platform, hydrated_reviews)
+                save_profile_reviews(
+                    platform,
+                    hydrated_reviews,
+                    metadata=load_profile_review_artifact_metadata(platform),
+                )
                 cached_profiles = sum(
                     1
                     for review in hydrated_reviews
@@ -2083,6 +2087,195 @@ def get_file_updated_at(file_path):
         return ''
 
 
+def write_json_file(file_path, payload):
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    with open(file_path, 'w', encoding='utf-8') as f:
+        json.dump(payload, f, indent=2, ensure_ascii=False)
+    return file_path
+
+
+def get_profile_reviews_path(platform):
+    return os.path.join(get_platform_dir(platform), f"{platform}_profile_reviews.json")
+
+
+def get_profile_reviews_meta_path(platform):
+    return os.path.join(get_platform_dir(platform), f"{platform}_profile_reviews_meta.json")
+
+
+def get_visual_results_path(platform):
+    return os.path.join(get_platform_dir(platform), f"{platform}_visual_results.json")
+
+
+def get_visual_review_history_path(platform):
+    return os.path.join(get_platform_dir(platform), f"{platform}_visual_review_history.json")
+
+
+def get_visual_live_review_path(platform):
+    return os.path.join(get_platform_dir(platform), f"{platform}_live_review.json")
+
+
+def get_visual_review_meta_path(platform):
+    return os.path.join(get_platform_dir(platform), f"{platform}_visual_review_meta.json")
+
+
+def load_saved_artifact_metadata(metadata_path):
+    payload = load_json_payload(metadata_path)
+    return payload if isinstance(payload, dict) else {}
+
+
+def normalize_saved_artifact_metadata(metadata=None, *, default_source_path='', default_updated_at=''):
+    payload = metadata if isinstance(metadata, dict) else {}
+    raw_data_source = str(payload.get("raw_data_source") or "current").strip() or "current"
+    source_path = str(payload.get("source_path") or default_source_path or '').strip()
+    updated_at = str(payload.get("updated_at") or default_updated_at or '').strip() or iso_now()
+    return {
+        "cached": bool(payload.get("cached")),
+        "stale_result": bool(payload.get("stale_result")),
+        "used_fallback": bool(payload.get("used_fallback")),
+        "raw_data_source": raw_data_source,
+        "source_path": source_path,
+        "updated_at": updated_at,
+    }
+
+
+def merge_saved_artifact_metadata(*metadata_items):
+    merged = {}
+    for metadata in metadata_items:
+        if not isinstance(metadata, dict):
+            continue
+        for key in ("cached", "stale_result", "used_fallback"):
+            if metadata.get(key):
+                merged[key] = True
+        for key in ("raw_data_source", "source_path", "updated_at"):
+            value = str(metadata.get(key) or '').strip()
+            if value:
+                if key == "updated_at":
+                    merged[key] = max(value, str(merged.get(key) or '').strip())
+                else:
+                    merged[key] = value
+    return normalize_saved_artifact_metadata(merged)
+
+
+def build_saved_artifact_export_fields(metadata=None):
+    artifact_meta = normalize_saved_artifact_metadata(metadata)
+    return {
+        "cached": artifact_meta.get("cached"),
+        "stale_result": artifact_meta.get("stale_result"),
+        "used_fallback": artifact_meta.get("used_fallback"),
+        "raw_data_source": artifact_meta.get("raw_data_source"),
+        "raw_data_source_path": artifact_meta.get("source_path"),
+        "raw_data_source_updated_at": artifact_meta.get("updated_at"),
+    }
+
+
+def load_profile_review_artifact_metadata(platform):
+    metadata_path = get_profile_reviews_meta_path(platform)
+    profile_reviews_path = get_profile_reviews_path(platform)
+    return normalize_saved_artifact_metadata(
+        load_saved_artifact_metadata(metadata_path),
+        default_source_path=profile_reviews_path,
+        default_updated_at=get_file_updated_at(profile_reviews_path),
+    )
+
+
+def load_latest_usable_profile_review_artifact(platform):
+    profile_reviews_path = get_profile_reviews_path(platform)
+    return {
+        "profile_reviews": load_profile_reviews(platform),
+        "path": profile_reviews_path,
+        **load_profile_review_artifact_metadata(platform),
+    }
+
+
+def load_saved_visual_review_artifact(platform):
+    visual_results_path = get_visual_results_path(platform)
+    review_history_path = get_visual_review_history_path(platform)
+    live_review_path = get_visual_live_review_path(platform)
+    visual_results = load_json_payload(visual_results_path)
+    review_history = load_json_payload(review_history_path)
+    live_review = load_json_payload(live_review_path)
+    last_updated_at = max(
+        [
+            get_file_updated_at(visual_results_path),
+            get_file_updated_at(review_history_path),
+            get_file_updated_at(live_review_path),
+            '',
+        ]
+    )
+    metadata = normalize_saved_artifact_metadata(
+        load_saved_artifact_metadata(get_visual_review_meta_path(platform)),
+        default_source_path=visual_results_path,
+        default_updated_at=last_updated_at,
+    )
+    return {
+        "visual_results": visual_results if isinstance(visual_results, dict) else {},
+        "review_history": review_history if isinstance(review_history, list) else [],
+        "live_review": live_review if isinstance(live_review, dict) else {},
+        "path": visual_results_path,
+        "visual_results_path": visual_results_path,
+        "review_history_path": review_history_path,
+        "live_review_path": live_review_path,
+        **metadata,
+    }
+
+
+def build_saved_final_review_artifact_status(platform, profile_review_artifact=None, visual_artifact=None):
+    profile_review_artifact = profile_review_artifact or load_latest_usable_profile_review_artifact(platform)
+    visual_artifact = visual_artifact or load_saved_visual_review_artifact(platform)
+    updated_at = max(
+        [
+            str(profile_review_artifact.get("updated_at") or '').strip(),
+            str(visual_artifact.get("updated_at") or '').strip(),
+            '',
+        ]
+    )
+    return {
+        "saved_final_review_artifacts_available": bool(
+            (profile_review_artifact.get("profile_reviews") or [])
+            and (visual_artifact.get("visual_results") or {})
+        ),
+        "saved_final_review_artifacts_updated_at": updated_at,
+    }
+
+
+def save_profile_reviews(platform, profile_reviews, metadata=None):
+    profile_reviews_path = get_profile_reviews_path(platform)
+    write_json_file(profile_reviews_path, profile_reviews)
+    merged_metadata = merge_saved_artifact_metadata(
+        load_profile_review_artifact_metadata(platform),
+        metadata,
+        {
+            "source_path": (metadata or {}).get("source_path") or profile_reviews_path,
+            "updated_at": iso_now(),
+        },
+    )
+    write_json_file(get_profile_reviews_meta_path(platform), merged_metadata)
+    return profile_reviews_path
+
+
+def save_visual_review_artifacts(platform, result, metadata=None):
+    visual_results = (result or {}).get("visual_results") or {}
+    review_history = (result or {}).get("review_history") or []
+    live_review = (result or {}).get("live_review") or {}
+    visual_results_path = write_json_file(get_visual_results_path(platform), visual_results)
+    write_json_file(get_visual_review_history_path(platform), review_history)
+    write_json_file(get_visual_live_review_path(platform), live_review)
+    merged_metadata = merge_saved_artifact_metadata(
+        load_saved_visual_review_artifact(platform),
+        metadata,
+        {
+            "source_path": (metadata or {}).get("source_path") or visual_results_path,
+            "updated_at": iso_now(),
+        },
+    )
+    write_json_file(get_visual_review_meta_path(platform), merged_metadata)
+    visual_artifact = load_saved_visual_review_artifact(platform)
+    return {
+        **visual_artifact,
+        **build_saved_final_review_artifact_status(platform, visual_artifact=visual_artifact),
+    }
+
+
 def load_raw_items_for_test_export(platform):
     current_path = get_raw_data_path(platform)
     snapshot_path = get_last_non_empty_raw_snapshot_path(platform)
@@ -2136,13 +2329,6 @@ def load_latest_usable_scrape_artifact(platform, current_path=None):
         artifact = dict(artifact)
         artifact["requested_path"] = current_path
     return artifact
-
-
-def save_profile_reviews(platform, profile_reviews):
-    profile_reviews_path = os.path.join(get_platform_dir(platform), f"{platform}_profile_reviews.json")
-    with open(profile_reviews_path, 'w', encoding='utf-8') as f:
-        json.dump(profile_reviews, f, indent=2, ensure_ascii=False)
-    return profile_reviews_path
 
 
 def get_upload_metadata_path(platform):
@@ -3056,9 +3242,10 @@ def build_audit_export_row_base(
     return append_upload_metadata_to_export_row(row, context["export_item"]), context
 
 
-def build_image_review_rows(platform, profile_reviews):
+def build_image_review_rows(platform, profile_reviews, artifact_metadata=None):
     rows = []
     metadata_lookup = load_upload_metadata(platform)
+    export_fields = build_saved_artifact_export_fields(artifact_metadata)
     for item in merge_upload_metadata_into_reviews(platform, profile_reviews):
         covers = item.get('covers') or []
         row, context = build_audit_export_row_base(
@@ -3076,15 +3263,17 @@ def build_image_review_rows(platform, profile_reviews):
             'soft_flags': format_soft_flags_for_export(review_item.get('soft_flags')),
             'cover_count': len(covers),
         })
+        row.update(export_fields)
         for idx in range(9):
             row[f'cover_{idx + 1}'] = covers[idx] if idx < len(covers) else ''
         rows.append(row)
     return rows
 
 
-def build_prescreen_review_rows(platform, profile_reviews):
+def build_prescreen_review_rows(platform, profile_reviews, artifact_metadata=None):
     rows = []
     metadata_lookup = load_upload_metadata(platform)
+    export_fields = build_saved_artifact_export_fields(artifact_metadata)
     for item in merge_upload_metadata_into_reviews(platform, profile_reviews):
         if not isinstance(item, dict):
             continue
@@ -3102,6 +3291,7 @@ def build_prescreen_review_rows(platform, profile_reviews):
             'soft_flags': format_soft_flags_for_export(review_item.get('soft_flags')),
             'cover_count': len(review_item.get('covers') or []),
         })
+        row.update(export_fields)
         rows.append(row)
     return rows
 
@@ -3118,11 +3308,12 @@ def format_visual_signals_for_export(signals):
     return '；'.join(parts)
 
 
-def build_final_review_rows(platform, profile_reviews, visual_results):
+def build_final_review_rows(platform, profile_reviews, visual_results, artifact_metadata=None):
     rows = []
     visual_lookup = {}
     merged_reviews = merge_upload_metadata_into_reviews(platform, profile_reviews)
     metadata_lookup = load_upload_metadata(platform)
+    export_fields = build_saved_artifact_export_fields(artifact_metadata)
 
     if isinstance(visual_results, dict):
         for key, review in visual_results.items():
@@ -3185,6 +3376,7 @@ def build_final_review_rows(platform, profile_reviews, visual_results):
             'final_status': final_status,
             'final_reason': final_reason,
         })
+        row.update(export_fields)
         rows.append(row)
 
     return rows
@@ -3280,6 +3472,118 @@ def build_profile_review_lookup(platform, profile_reviews):
         lookup[identifier] = item
 
     return lookup, ordered_identifiers
+
+
+def merge_saved_profile_reviews(platform, requested_profile_reviews, saved_profile_reviews):
+    requested_reviews = (
+        merge_upload_metadata_into_reviews(platform, requested_profile_reviews)
+        if isinstance(requested_profile_reviews, list) else []
+    )
+    saved_reviews = (
+        merge_upload_metadata_into_reviews(platform, saved_profile_reviews)
+        if isinstance(saved_profile_reviews, list) else []
+    )
+    requested_lookup, requested_order = build_profile_review_lookup(platform, requested_reviews)
+    saved_lookup, saved_order = build_profile_review_lookup(platform, saved_reviews)
+
+    if not requested_lookup:
+        return saved_reviews
+    if not saved_lookup:
+        return requested_reviews
+
+    merged_reviews = []
+    seen_identifiers = set()
+    for identifier in requested_order + saved_order:
+        if not identifier or identifier in seen_identifiers:
+            continue
+        seen_identifiers.add(identifier)
+        merged_reviews.append(requested_lookup.get(identifier) or saved_lookup.get(identifier))
+
+    return [item for item in merged_reviews if isinstance(item, dict)]
+
+
+def build_visual_results_lookup(visual_results):
+    lookup = {}
+    ordered_keys = []
+    if not isinstance(visual_results, dict):
+        return lookup, ordered_keys
+
+    for key, review in visual_results.items():
+        if not isinstance(review, dict):
+            continue
+        identifier = normalize_identifier(review.get("username") or key)
+        if not identifier:
+            continue
+        if identifier not in lookup:
+            ordered_keys.append(identifier)
+        review_payload = dict(review)
+        if not review_payload.get("username"):
+            review_payload["username"] = key
+        lookup[identifier] = review_payload
+
+    return lookup, ordered_keys
+
+
+def merge_saved_visual_results(requested_visual_results, saved_visual_results):
+    requested_lookup, requested_order = build_visual_results_lookup(requested_visual_results)
+    saved_lookup, saved_order = build_visual_results_lookup(saved_visual_results)
+
+    if not requested_lookup:
+        merged_lookup = saved_lookup
+        ordered_identifiers = saved_order
+    elif not saved_lookup:
+        merged_lookup = requested_lookup
+        ordered_identifiers = requested_order
+    else:
+        merged_lookup = dict(saved_lookup)
+        merged_lookup.update(requested_lookup)
+        ordered_identifiers = []
+        for identifier in requested_order + saved_order:
+            if identifier and identifier not in ordered_identifiers:
+                ordered_identifiers.append(identifier)
+
+    merged_results = {}
+    for identifier in ordered_identifiers:
+        review = merged_lookup.get(identifier)
+        if not isinstance(review, dict):
+            continue
+        key = str(review.get("username") or identifier).strip() or identifier
+        merged_results[key] = review
+    return merged_results
+
+
+def resolve_final_review_export_payload(platform, payload):
+    requested_profile_reviews = payload.get("profile_reviews")
+    requested_visual_results = payload.get("visual_results")
+
+    if requested_profile_reviews is not None and not isinstance(requested_profile_reviews, list):
+        raise ValueError("profile_reviews must be an array when provided")
+    if requested_visual_results is not None and not isinstance(requested_visual_results, dict):
+        raise ValueError("visual_results must be an object when provided")
+
+    profile_review_artifact = load_latest_usable_profile_review_artifact(platform)
+    visual_artifact = load_saved_visual_review_artifact(platform)
+    resolved_profile_reviews = merge_saved_profile_reviews(
+        platform,
+        requested_profile_reviews or [],
+        profile_review_artifact.get("profile_reviews") or [],
+    )
+    resolved_visual_results = merge_saved_visual_results(
+        requested_visual_results or {},
+        visual_artifact.get("visual_results") or {},
+    )
+    merged_metadata = merge_saved_artifact_metadata(profile_review_artifact, visual_artifact)
+
+    return {
+        "profile_reviews": resolved_profile_reviews,
+        "visual_results": resolved_visual_results,
+        "artifact_metadata": merged_metadata,
+        **build_saved_final_review_artifact_status(
+            platform,
+            profile_review_artifact=profile_review_artifact,
+            visual_artifact=visual_artifact,
+        ),
+    }
 
 
 def build_test_info_json_payload(platform, profile_reviews, raw_items, metadata_lookup, raw_export_meta=None):
@@ -3489,7 +3793,7 @@ def build_test_info_raw_rows(platform, raw_items, profile_reviews, metadata_look
 
 
 def load_profile_reviews(platform):
-    profile_reviews_path = os.path.join(get_platform_dir(platform), f"{platform}_profile_reviews.json")
+    profile_reviews_path = get_profile_reviews_path(platform)
     if not os.path.exists(profile_reviews_path):
         return []
 
@@ -4027,7 +4331,19 @@ def build_cached_scrape_response(output_filename, output_file_path, skipped_coun
         for item in cached_profile_reviews
         if isinstance(item, dict) and item.get("status") != "Missing"
     ]
-    return {
+    save_profile_reviews(
+        output_filename,
+        cached_profile_reviews,
+        metadata={
+            "cached": True,
+            "stale_result": False,
+            "used_fallback": bool(raw_artifact.get("used_fallback")),
+            "raw_data_source": raw_artifact.get("source"),
+            "source_path": raw_artifact.get("path") or output_file_path,
+            "updated_at": iso_now(),
+        },
+    )
+    response = {
         "success": True,
         "cached": True,
         "count": len(cached_data),
@@ -4040,6 +4356,8 @@ def build_cached_scrape_response(output_filename, output_file_path, skipped_coun
         "raw_data_source": raw_artifact.get("source"),
         "message": f"本次有 {skipped_count} 个账号命中缓存，当前展示的是{source_message}。勾选“强制刷新缓存”可重新采集。"
     }
+    response.update(build_saved_final_review_artifact_status(output_filename))
+    return response
 
 
 def build_preserved_failure_response(output_filename, output_file_path, failed_batches, progress_callback=None, requested_identifiers=None):
@@ -4069,7 +4387,19 @@ def build_preserved_failure_response(output_filename, output_file_path, failed_b
     if progress_callback:
         progress_callback("completed", message, done=4, total=4, failed_count=len(failed_batches or []))
 
-    return {
+    save_profile_reviews(
+        output_filename,
+        profile_reviews,
+        metadata={
+            "cached": True,
+            "stale_result": True,
+            "used_fallback": bool(raw_artifact.get("used_fallback")),
+            "raw_data_source": raw_artifact.get("source"),
+            "source_path": raw_artifact.get("path") or output_file_path,
+            "updated_at": iso_now(),
+        },
+    )
+    response = {
         "success": True,
         "cached": True,
         "stale_result": True,
@@ -4088,6 +4418,8 @@ def build_preserved_failure_response(output_filename, output_file_path, failed_b
         "raw_data_source": raw_artifact.get("source"),
         "message": message,
     }
+    response.update(build_saved_final_review_artifact_status(output_filename))
+    return response
 
 def chunk_list(items, chunk_size):
     if chunk_size <= 0:
@@ -4272,7 +4604,18 @@ def finalize_apify_output(output_filename, output_file_path, identifiers, skippe
         cached_profile_reviews,
     )
     filter_result["profile_reviews"] = profile_reviews
-    profile_reviews_path = save_profile_reviews(output_filename, profile_reviews)
+    profile_reviews_path = save_profile_reviews(
+        output_filename,
+        profile_reviews,
+        metadata={
+            "cached": False,
+            "stale_result": False,
+            "used_fallback": bool(raw_artifact.get("used_fallback")),
+            "raw_data_source": raw_artifact.get("source"),
+            "source_path": source_path,
+            "updated_at": iso_now(),
+        },
+    )
     if output_filename == "tiktok" and profile_reviews:
         schedule_tiktok_cover_cache_warm(output_filename, data, profile_reviews)
 
@@ -4312,6 +4655,7 @@ def finalize_apify_output(output_filename, output_file_path, identifiers, skippe
         "raw_data_source": raw_artifact.get("source"),
         "message": f"本次新抓取 {len(fresh_successful_identifiers)} 个账号，命中缓存 {skipped_count} 个；当前共整理出 {len(successful_identifiers)} / {len(requested_identifiers) or len(profile_reviews)} 个账号的初筛结果。"
     }
+    result.update(build_saved_final_review_artifact_status(output_filename))
     if raw_artifact.get("used_fallback"):
         result["message"] = (
             f"本次抓取未产出新的可用原始文件，已回退到最近一次可用结果；"
@@ -5941,7 +6285,7 @@ def perform_visual_review(job_id, profiles, platform="tiktok", review_mode=VISUA
                 review_history,
             ),
         )
-    return {
+    result = {
         "visual_results": results,
         "review_history": review_history,
         "summary": {
@@ -5952,6 +6296,23 @@ def perform_visual_review(job_id, profiles, platform="tiktok", review_mode=VISUA
         },
         "live_review": current_live_review,
     }
+    visual_artifact = save_visual_review_artifacts(
+        platform,
+        result,
+        metadata=merge_saved_artifact_metadata(
+            load_profile_review_artifact_metadata(platform),
+            {
+                "cached": False,
+                "stale_result": False,
+                "used_fallback": False,
+                "raw_data_source": load_profile_review_artifact_metadata(platform).get("raw_data_source"),
+                "source_path": get_visual_results_path(platform),
+                "updated_at": iso_now(),
+            },
+        ),
+    )
+    result.update(build_saved_final_review_artifact_status(platform, visual_artifact=visual_artifact))
+    return result
 
 
 def start_background_job(job, runner):
@@ -6215,6 +6576,28 @@ def get_results(platform):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+@app.route('/api/artifacts/<platform>/status', methods=['GET'])
+def get_artifact_status(platform):
+    if platform not in {"tiktok", "instagram", "youtube"}:
+        return jsonify({"error": "Invalid platform"}), 400
+
+    profile_review_artifact = load_latest_usable_profile_review_artifact(platform)
+    visual_artifact = load_saved_visual_review_artifact(platform)
+    payload = {
+        "platform": platform,
+        "profile_reviews_path": profile_review_artifact.get("path"),
+        "profile_reviews_updated_at": profile_review_artifact.get("updated_at"),
+        "visual_results_path": visual_artifact.get("visual_results_path"),
+        "visual_results_updated_at": visual_artifact.get("updated_at"),
+    }
+    payload.update(build_saved_final_review_artifact_status(
+        platform,
+        profile_review_artifact=profile_review_artifact,
+        visual_artifact=visual_artifact,
+    ))
+    return jsonify(payload)
+
 @app.route('/api/download/<platform>/test-info', methods=['GET'])
 def download_test_info(platform):
     import pandas as pd
@@ -6288,43 +6671,32 @@ def download_test_info_json(platform):
 
 @app.route('/api/download/<platform>/<format>', methods=['GET'])
 def download_results(platform, format):
+    if platform not in {"tiktok", "instagram", "youtube"}:
+        return "Invalid platform", 400
+
     platform_dir = get_platform_dir(platform)
     json_path = os.path.join(platform_dir, f"{platform}_data.json")
-    if not os.path.exists(json_path):
+    raw_artifact = load_latest_usable_scrape_artifact(platform, json_path)
+    raw_items = raw_artifact.get("items") or []
+    if not raw_items:
         return "File not found", 404
         
     if format == "json":
-        return send_file(json_path, as_attachment=True)
+        return app.response_class(
+            json.dumps(raw_items, ensure_ascii=False, indent=2, allow_nan=False),
+            mimetype='application/json',
+            headers={
+                'Content-Disposition': f'attachment; filename={platform}_data.json'
+            },
+        )
     elif format == "excel":
         import pandas as pd
 
         try:
-            with open(json_path, 'r', encoding='utf-8') as f:
-                raw_text = f.read().strip()
-            if not raw_text:
-                return jsonify({"error": "No data available to export"}), 400
-
-            start_idx = -1
-            for i, char in enumerate(raw_text):
-                if char in ['[', '{']:
-                    start_idx = i
-                    break
-
-            if start_idx == -1:
-                return jsonify({"error": "Invalid JSON content"}), 400
-
-            data = json.loads(raw_text[start_idx:])
-            if isinstance(data, dict):
-                data = [data]
-            elif not isinstance(data, list):
-                data = [data]
-
-            df = pd.json_normalize(data)
+            df = pd.json_normalize(raw_items)
             excel_path = os.path.join(platform_dir, f"{platform}_data.xlsx")
             df.to_excel(excel_path, index=False)
             return send_file(excel_path, as_attachment=True)
-        except json.JSONDecodeError as e:
-            return jsonify({"error": f"Invalid JSON format: {str(e)}"}), 400
         except Exception as e:
             return jsonify({"error": str(e)}), 500
     
@@ -6334,19 +6706,16 @@ def download_results(platform, format):
 def download_image_review(platform):
     import pandas as pd
 
-    platform_dir = get_platform_dir(platform)
-    profile_reviews_path = os.path.join(platform_dir, f"{platform}_profile_reviews.json")
-    if not os.path.exists(profile_reviews_path):
-        return jsonify({"error": "No profile review data available to export"}), 404
-
     try:
-        profile_reviews = load_profile_reviews(platform)
+        artifact = load_latest_usable_profile_review_artifact(platform)
+        profile_reviews = artifact.get("profile_reviews") or []
 
         if not isinstance(profile_reviews, list) or len(profile_reviews) == 0:
             return jsonify({"error": "Profile review data is empty"}), 400
 
-        rows = build_image_review_rows(platform, profile_reviews)
+        rows = build_image_review_rows(platform, profile_reviews, artifact_metadata=artifact)
         df = pd.DataFrame(rows)
+        platform_dir = get_platform_dir(platform)
         excel_path = os.path.join(platform_dir, f"{platform}_image_review.xlsx")
         df.to_excel(excel_path, index=False)
         return send_file(excel_path, as_attachment=True)
@@ -6358,19 +6727,16 @@ def download_image_review(platform):
 def download_prescreen_review(platform):
     import pandas as pd
 
-    platform_dir = get_platform_dir(platform)
-    profile_reviews_path = os.path.join(platform_dir, f"{platform}_profile_reviews.json")
-    if not os.path.exists(profile_reviews_path):
-        return jsonify({"error": "No profile review data available to export"}), 404
-
     try:
-        profile_reviews = load_profile_reviews(platform)
+        artifact = load_latest_usable_profile_review_artifact(platform)
+        profile_reviews = artifact.get("profile_reviews") or []
 
         if not isinstance(profile_reviews, list) or len(profile_reviews) == 0:
             return jsonify({"error": "Profile review data is empty"}), 400
 
-        rows = build_prescreen_review_rows(platform, profile_reviews)
+        rows = build_prescreen_review_rows(platform, profile_reviews, artifact_metadata=artifact)
         df = pd.DataFrame(rows)
+        platform_dir = get_platform_dir(platform)
         excel_path = os.path.join(platform_dir, f"{platform}_prescreen_review.xlsx")
         df.to_excel(excel_path, index=False)
         return send_file(excel_path, as_attachment=True)
@@ -6386,17 +6752,20 @@ def download_final_review(platform):
         return jsonify({"error": "Invalid platform"}), 400
 
     payload = request.get_json(silent=True) or {}
-    profile_reviews = payload.get("profile_reviews") or []
-    visual_results = payload.get("visual_results") or {}
-
-    if not isinstance(profile_reviews, list) or len(profile_reviews) == 0:
-        return jsonify({"error": "profile_reviews must be a non-empty array"}), 400
-    if not isinstance(visual_results, dict):
-        return jsonify({"error": "visual_results must be an object"}), 400
 
     try:
-        merged_profile_reviews = merge_upload_metadata_into_reviews(platform, profile_reviews)
-        rows = build_final_review_rows(platform, merged_profile_reviews, visual_results)
+        resolved_payload = resolve_final_review_export_payload(platform, payload)
+        profile_reviews = resolved_payload.get("profile_reviews") or []
+        visual_results = resolved_payload.get("visual_results") or {}
+        if len(profile_reviews) == 0:
+            return jsonify({"error": "No profile review data available to export"}), 400
+
+        rows = build_final_review_rows(
+            platform,
+            profile_reviews,
+            visual_results,
+            artifact_metadata=resolved_payload.get("artifact_metadata"),
+        )
         if len(rows) == 0:
             return jsonify({"error": "No final review rows available to export"}), 400
 
@@ -6411,6 +6780,8 @@ def download_final_review(platform):
             download_name=f"{platform}_final_review.xlsx",
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         )
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
