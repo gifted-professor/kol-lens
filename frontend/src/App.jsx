@@ -719,6 +719,34 @@ function formatUploadFileSize(size) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function getWorkbookParsingStatus(percent) {
+  if (percent < 74) {
+    return {
+      label: '文件已上传，正在读取工作簿...',
+      badge: '解析中',
+    };
+  }
+
+  if (percent < 88) {
+    return {
+      label: '正在识别平台与账号列...',
+      badge: '识别中',
+    };
+  }
+
+  if (percent < 97) {
+    return {
+      label: '正在校验数据并整理结果...',
+      badge: '校验中',
+    };
+  }
+
+  return {
+    label: '正在写入结果，马上完成...',
+    badge: '即将完成',
+  };
+}
+
 function uploadWorkbookWithProgress(apiUrl, formData, onProgress) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -733,21 +761,24 @@ function uploadWorkbookWithProgress(apiUrl, formData, onProgress) {
 
     const startParsingProgress = () => {
       stopParsingProgress();
-      let currentPercent = 58;
-      onProgress({
-        phase: 'parsing',
-        percent: currentPercent,
-        label: '文件已上传，正在解析工作簿...',
-      });
+      let currentPercent = 60;
 
-      parsingTimer = window.setInterval(() => {
-        currentPercent = Math.min(92, currentPercent + (currentPercent < 76 ? 5 : currentPercent < 86 ? 2 : 1));
+      const emitParsingProgress = () => {
+        const status = getWorkbookParsingStatus(currentPercent);
         onProgress({
           phase: 'parsing',
           percent: currentPercent,
-          label: '文件已上传，正在解析工作簿...',
+          label: status.label,
+          badge: status.badge,
         });
-      }, 180);
+      };
+
+      emitParsingProgress();
+
+      parsingTimer = window.setInterval(() => {
+        currentPercent = Math.min(99, currentPercent + (currentPercent < 78 ? 3 : currentPercent < 92 ? 2 : 1));
+        emitParsingProgress();
+      }, 220);
     };
 
     xhr.open('POST', apiUrl, true);
@@ -777,6 +808,7 @@ function uploadWorkbookWithProgress(apiUrl, formData, onProgress) {
         phase: 'uploading',
         percent: scaledPercent,
         label: rawPercent >= 100 ? '文件已上传，正在解析工作簿...' : `正在上传文件 ${rawPercent}%`,
+        badge: rawPercent >= 100 ? '处理中' : `${rawPercent}%`,
       });
     });
 
@@ -893,6 +925,9 @@ function App() {
   const [visualPreviewModal, setVisualPreviewModal] = useState(null);
   const [visualReviewMode, setVisualReviewMode] = useState(VISUAL_REVIEW_MODE_AUTO);
   const [expandedCards, setExpandedCards] = useState(() => new Set());
+  const [activeWorkspace, setActiveWorkspace] = useState('run');
+  const [activeResultTab, setActiveResultTab] = useState('overview');
+  const [showTemplateWorkbench, setShowTemplateWorkbench] = useState(false);
   const [templateInput, setTemplateInput] = useState('');
   const [templateLoading, setTemplateLoading] = useState(false);
   const [templateError, setTemplateError] = useState(null);
@@ -950,7 +985,17 @@ function App() {
     setVisualReviewSelection({ mode: 'live', key: null });
     setVisualPreviewModal(null);
     setExpandedCards(new Set());
+    setActiveWorkspace('run');
+    setActiveResultTab('overview');
+    setShowTemplateWorkbench(false);
   }, [activeTab]);
+
+  useEffect(() => {
+    if (!result) {
+      setActiveWorkspace('run');
+      setActiveResultTab('overview');
+    }
+  }, [result]);
 
   useEffect(() => () => {
     scrapeAbortController?.abort();
@@ -1034,6 +1079,7 @@ function App() {
       phase: 'uploading',
       percent: 6,
       label: '正在上传文件...',
+      badge: '准备中',
       fileName: selectedFile.name,
       fileSize: selectedFile.size,
     });
@@ -1043,6 +1089,7 @@ function App() {
           phase: progress.phase || current?.phase || 'uploading',
           percent: typeof progress.percent === 'number' ? progress.percent : (current?.percent || 0),
           label: progress.label || current?.label || '正在处理文件...',
+          badge: progress.badge || current?.badge || null,
           fileName: selectedFile.name,
           fileSize: selectedFile.size,
         }));
@@ -1092,6 +1139,7 @@ function App() {
           phase: 'failed',
           percent: 100,
           label: '上传失败，请检查模板内容后重试。',
+          badge: '失败',
           fileName: selectedFile.name,
           fileSize: selectedFile.size,
         });
@@ -1102,6 +1150,7 @@ function App() {
         phase: 'failed',
         percent: 100,
         label: '上传失败，请检查模板或服务状态。',
+        badge: '失败',
         fileName: selectedFile.name,
         fileSize: selectedFile.size,
       });
@@ -1120,6 +1169,9 @@ function App() {
     const controller = new AbortController();
     let lastPartialSignature = '';
 
+    setActiveWorkspace('run');
+    setActiveResultTab('overview');
+    setShowTemplateWorkbench(false);
     setSubmitting(true);
     setScrapeRunning(true);
     setScrapeAbortController(controller);
@@ -1368,6 +1420,7 @@ function App() {
 
   const handleGenerateTemplates = async () => {
     const trimmedInput = String(templateInput || '').trim();
+    setShowTemplateWorkbench(true);
     if (!trimmedInput) {
       setTemplateError('请输入一段审核需求，再编译 RuleSpec。');
       return;
@@ -1493,6 +1546,8 @@ function App() {
     }
 
     const controller = new AbortController();
+    setActiveWorkspace('results');
+    setActiveResultTab('visual-review');
     setVisualLoading(true);
     setVisualError(null);
     setVisualResults({});
@@ -1964,6 +2019,22 @@ function App() {
     },
   ];
   const activeResultPlatform = (resultPlatform || activeTab).toUpperCase();
+  const resultTabOptions = [
+    { key: 'overview', label: '概览' },
+    { key: 'profiles', label: '博主卡片' },
+    { key: 'visual-review', label: '视觉复核' },
+    { key: 'export-handoff', label: '导出交接' },
+  ];
+  const activeResultTabLabel = resultTabOptions.find((item) => item.key === activeResultTab)?.label || '概览';
+  const resultWorkspaceStatus = result?.is_partial
+    ? '增量结果'
+    : result?.used_fallback
+      ? '回退快照'
+      : result?.stale_result
+        ? '旧结果'
+        : result?.cached
+          ? '缓存结果'
+          : '最新完成结果';
   const parsedTemplateSteps = Array.isArray(templateResult?.parsed_sop?.steps) ? templateResult.parsed_sop.steps : [];
   const availableTemplatePlatforms = ['tiktok', 'instagram', 'youtube'].filter(
     (platform) => templateResult?.field_match_report?.platforms?.[platform],
@@ -2182,7 +2253,7 @@ function App() {
                           </p>
                         </div>
                         <div className="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-gray-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-                          {Math.max(0, Math.min(100, Math.round(uploadProgress.percent || 0)))}%
+                          {uploadProgress.badge || `${Math.max(0, Math.min(100, Math.round(uploadProgress.percent || 0)))}%`}
                         </div>
                       </div>
                       <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-white/90">
@@ -2481,298 +2552,410 @@ function App() {
           variants={bentoVariants}
           className={`${bentoCardClassName} mt-5`}
         >
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gray-400">Launch Panel</p>
-              <h3 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-gray-900">启动采集与查看任务进度</h3>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-500">
-                当前交互和数据绑定保持不变，只将按钮、告警和任务反馈收敛进同一块操作面板。
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gray-400">Workspace</p>
+              <h3 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-gray-900">运行工作台 / 结果工作台</h3>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-500">
+                主工作流只保留上传、配置、启动与任务进度；后续复核与导出通过明确入口进入结果工作台，不再继续向下堆叠。
               </p>
             </div>
-            <button
-              onClick={scrapeRunning ? handleCancelScrape : handleScrape}
-              className={`inline-flex min-w-[220px] cursor-pointer items-center justify-center gap-2 rounded-[20px] px-8 py-4 text-sm font-semibold transition-[transform,box-shadow,background-color] duration-200 ${
-                scrapeRunning
-                  ? 'bg-rose-600 text-white shadow-[0_18px_40px_rgba(225,29,72,0.22)] hover:-translate-y-px hover:bg-rose-700'
-                  : 'bg-gray-950 text-white shadow-[0_18px_40px_rgba(15,23,42,0.18)] hover:-translate-y-px hover:bg-gray-900'
-              }`}
-            >
-              {scrapeRunning ? <XCircle className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-              {scrapeRunning ? (scrapeJob?.id ? '取消采集' : '取消提交') : '开始采集 (Start Scraping)'}
-            </button>
-          </div>
-
-          <AnimatePresence>
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="mt-6 flex items-start gap-3 rounded-[22px] border border-rose-200/70 bg-rose-50/80 p-5 text-rose-800"
-              >
-                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
-                <div>
-                  <strong className="block mb-1">错误</strong>
-                  <span className="text-sm">{error}</span>
-                </div>
-              </motion.div>
-            )}
-
-            {visualError && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="mt-6 flex items-start gap-3 rounded-[22px] border border-amber-200/70 bg-amber-50/80 p-5 text-amber-800"
-              >
-                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
-                <div>
-                  <strong className="block mb-1">视觉复核提示</strong>
-                  <span className="text-sm">{visualError}</span>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <div className="mt-6 space-y-3">
-            {renderJobCard('采集任务进度', scrapeJob, 'info')}
-            {renderJobCard('视觉复核任务进度', visualJob, 'warning')}
-          </div>
-        </motion.div>
-
-        <motion.div
-          custom={3}
-          initial="hidden"
-          animate="visible"
-          variants={bentoVariants}
-          className={`${bentoCardClassName} mt-5`}
-        >
-          <div className="flex flex-col gap-6">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gray-400">RuleSpec Compiler</p>
-                <h3 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-gray-900">输入审核需求，编译 RuleSpec 与字段匹配报告</h3>
-                <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-500">
-                  这里不会直接执行审核，只会把你的 SOP 编译成受限 RuleSpec，并给出 TikTok、Instagram、YouTube 的字段匹配结果。V1 strict mode 里 YouTube 会稳定标记为 unsupported。
-                </p>
-              </div>
+            <div className="inline-flex w-full rounded-2xl bg-gray-100/90 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] lg:max-w-[360px]">
               <button
                 type="button"
-                onClick={handleGenerateTemplates}
-                disabled={templateLoading}
-                className={`inline-flex min-w-[220px] cursor-pointer items-center justify-center gap-2 rounded-[20px] px-8 py-4 text-sm font-semibold transition-[transform,box-shadow,background-color] duration-200 ${
-                  templateLoading
-                    ? 'bg-gray-300 text-white shadow-none cursor-wait'
-                    : 'bg-gray-950 text-white shadow-[0_18px_40px_rgba(15,23,42,0.18)] hover:-translate-y-px hover:bg-gray-900'
+                onClick={() => setActiveWorkspace('run')}
+                className={`flex-1 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 ${
+                  activeWorkspace === 'run'
+                    ? 'bg-white text-gray-900 shadow-[0_1px_2px_rgba(15,23,42,0.06),0_12px_30px_rgba(15,23,42,0.08)]'
+                    : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                <RefreshCw className={`h-5 w-5 ${templateLoading ? 'animate-spin' : ''}`} />
-                {templateLoading ? '编译中...' : '编译 RuleSpec'}
+                运行工作台
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!result) return;
+                  setActiveWorkspace('results');
+                }}
+                disabled={!result}
+                className={`flex-1 rounded-xl px-4 py-3 text-sm font-semibold transition-all duration-200 ${
+                  activeWorkspace === 'results'
+                    ? 'bg-white text-gray-900 shadow-[0_1px_2px_rgba(15,23,42,0.06),0_12px_30px_rgba(15,23,42,0.08)]'
+                    : 'text-gray-500 hover:text-gray-700'
+                } ${!result ? 'cursor-not-allowed opacity-50' : ''}`}
+              >
+                结果工作台
               </button>
             </div>
-
-            <div className="rounded-[24px] border border-gray-200/70 bg-gray-50/70 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.95)] md:p-5">
-              <textarea
-                value={templateInput}
-                onChange={(e) => setTemplateInput(e.target.value)}
-                placeholder={TEMPLATE_PLACEHOLDER}
-                className={`${formFieldClassName} min-h-[260px] resize-y leading-6`}
-              />
-              <div className="mt-3 flex flex-col gap-2 text-xs text-gray-500 md:flex-row md:items-center md:justify-between">
-                <span>支持中英混合自由文本，建议按“目标 / 步骤 / 最终结果”结构输入。</span>
-                <span>{templateInput.trim().length} 字符</span>
-              </div>
-            </div>
-
-            <AnimatePresence>
-              {templateError && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="flex items-start gap-3 rounded-[22px] border border-rose-200/70 bg-rose-50/80 p-5 text-rose-800"
-                >
-                  <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
-                  <div>
-                    <strong className="mb-1 block">RuleSpec 编译失败</strong>
-                    <span className="text-sm">{templateError}</span>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {templateResult && (
-              <div className="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-                <div className="space-y-4 rounded-[24px] border border-gray-200/70 bg-gray-50/70 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.95)]">
-                  <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">Parse Summary</p>
-                    <h4 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-gray-900">
-                      {templateResult.parsed_sop?.goal || '未识别到审核目标'}
-                    </h4>
-                    <p className="mt-2 text-sm leading-6 text-gray-500">
-                      共解析出 {parsedTemplateSteps.length} 个步骤。
-                      {Array.isArray(templateResult?.rule_spec?.out_of_scope_actions) ? ` 范围外动作 ${templateResult.rule_spec.out_of_scope_actions.length} 条。` : ''}
-                      {templateResult.output_dir ? ` 已写入 ${templateResult.output_dir}` : ''}
-                    </p>
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    {availableTemplatePlatforms.map((platform) => {
-                      const summary = templateResult.field_match_report?.platforms?.[platform]?.summary || {};
-                      return (
-                        <button
-                          key={platform}
-                          type="button"
-                          onClick={() => setTemplatePlatform(platform)}
-                          className={`rounded-[22px] border p-4 text-left transition-[transform,border-color,box-shadow] duration-200 ${
-                            templatePlatform === platform
-                              ? 'border-gray-900 bg-white shadow-[0_18px_34px_rgba(15,23,42,0.08)]'
-                              : 'border-gray-200/80 bg-white hover:-translate-y-px hover:border-gray-300 hover:shadow-[0_10px_24px_rgba(15,23,42,0.05)]'
-                          }`}
-                        >
-                          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
-                            {formatTemplatePlatformLabel(platform)}
-                          </p>
-                          <div className="mt-3 space-y-2 text-sm text-gray-600">
-                            <div className="flex items-center justify-between">
-                              <span>已匹配</span>
-                              <span className="font-semibold text-emerald-700">{summary.matched || 0}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span>部分匹配</span>
-                              <span className="font-semibold text-amber-700">{summary.partial || 0}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span>能力缺口</span>
-                              <span className="font-semibold text-orange-700">{summary.missing_capabilities || 0}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span>解析歧义</span>
-                              <span className="font-semibold text-sky-700">{summary.ambiguous || 0}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span>当前不支持</span>
-                              <span className="font-semibold text-rose-700">{summary.unsupported || 0}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span>敏感属性禁用</span>
-                              <span className="font-semibold text-slate-700">{summary.blocked_sensitive_attribute || 0}</span>
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div className="rounded-[22px] border border-gray-200/80 bg-white p-4">
-                    <p className="text-sm font-semibold text-gray-900">解析步骤</p>
-                    <div className="mt-3 space-y-3">
-                      {parsedTemplateSteps.map((step) => (
-                        <div key={step.title} className="rounded-2xl border border-gray-200/70 bg-gray-50/70 p-3">
-                          <p className="text-sm font-semibold text-gray-900">{step.title}</p>
-                          <p className="mt-1 text-xs text-gray-500">
-                            已识别 {step.rule_count || 0} 条规则
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4 rounded-[24px] border border-gray-200/70 bg-white p-5 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_18px_42px_rgba(15,23,42,0.05)]">
-                  <div className="flex flex-col gap-2 border-b border-gray-100 pb-4 md:flex-row md:items-end md:justify-between">
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">Platform Match Report</p>
-                      <h4 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-gray-900">
-                        {selectedTemplate ? `${formatTemplatePlatformLabel(templatePlatform)} 匹配报告` : '选择平台查看报告'}
-                      </h4>
-                    </div>
-                    {templateResult?.rule_spec?.final_logic && (
-                      <div className="rounded-full border border-gray-200 bg-gray-50 px-4 py-2 text-xs font-medium text-gray-600">
-                        Final Logic: {templateResult.rule_spec.final_logic}
-                      </div>
-                    )}
-                  </div>
-
-                  {selectedTemplate && (
-                    <>
-                      <div className="grid gap-3 md:grid-cols-2">
-                        <div className="rounded-[22px] border border-gray-200/80 bg-gray-50/70 p-4">
-                          <p className="text-sm font-semibold text-gray-900">字段映射依据</p>
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {(selectedTemplate.mapping_basis || []).map((item) => (
-                              <span key={item} className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-600">
-                                {item}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="rounded-[22px] border border-gray-200/80 bg-gray-50/70 p-4">
-                          <p className="text-sm font-semibold text-gray-900">平台结论</p>
-                          <p className="mt-3 text-sm leading-6 text-gray-600">
-                            {selectedTemplate.platform_note || `当前共有 ${selectedTemplateGaps.length} 条规则需要人工确认、补字段或补采集能力。`}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="space-y-3">
-                        {selectedTemplateChecks.map((check) => (
-                          <div key={check.rule_id} className="rounded-[22px] border border-gray-200/80 bg-gray-50/60 p-4">
-                            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                              <div className="min-w-0">
-                                <p className="text-sm font-semibold text-gray-900">{check.source_text}</p>
-                                <p className="mt-1 text-xs text-gray-500">
-                                  {check.step_title} · {check.rule_type}
-                                </p>
-                              </div>
-                              <span className={`inline-flex shrink-0 items-center rounded-full border px-3 py-1 text-xs font-semibold ${getTemplateStatusClassName(check.status)}`}>
-                                {formatTemplateStatusLabel(check.status)}
-                              </span>
-                            </div>
-
-                            <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-                              <div className="rounded-2xl border border-gray-200/70 bg-white p-3">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400">Fields</p>
-                                <p className="mt-2 text-sm leading-6 text-gray-600 break-all">
-                                  {Array.isArray(check.matched_fields) && check.matched_fields.length > 0 ? check.matched_fields.join(', ') : '当前没有稳定字段支撑'}
-                                </p>
-                              </div>
-                              <div className="rounded-2xl border border-gray-200/70 bg-white p-3">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400">Capabilities / Notes</p>
-                                <p className="mt-2 text-sm leading-6 text-gray-600">
-                                  {Array.isArray(check.required_capabilities) && check.required_capabilities.length > 0 ? `需要 ${check.required_capabilities.join(', ')}。` : ''}
-                                  {Array.isArray(check.missing_capabilities) && check.missing_capabilities.length > 0 ? ` 缺口 ${check.missing_capabilities.join(', ')}。` : ''}
-                                  {check.notes ? ` ${check.notes}` : ' 无额外说明'}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      {selectedTemplateBlockedRules.length > 0 && (
-                        <div className="rounded-[22px] border border-slate-200/80 bg-slate-50/90 p-4">
-                          <p className="text-sm font-semibold text-slate-900">已阻止的敏感属性规则</p>
-                          <div className="mt-3 space-y-2">
-                            {selectedTemplateBlockedRules.map((rule) => (
-                              <div key={rule.rule_id} className="rounded-2xl border border-slate-200/80 bg-white p-3 text-sm text-slate-700">
-                                <p className="font-medium text-slate-900">{rule.source_text}</p>
-                                <p className="mt-1 text-xs text-slate-500">{rule.notes || rule.policy_reason || '该规则不应自动化执行'}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         </motion.div>
 
+        {activeWorkspace === 'run' && (
+          <>
+            <motion.div
+              custom={3}
+              initial="hidden"
+              animate="visible"
+              variants={bentoVariants}
+              className={`${bentoCardClassName} mt-5`}
+            >
+              <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gray-400">Launch Panel</p>
+                  <h3 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-gray-900">启动采集与查看任务进度</h3>
+                  <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-500">
+                    当前交互和数据绑定保持不变，只将按钮、告警和任务反馈收敛进同一块操作面板。
+                  </p>
+                </div>
+                <button
+                  onClick={scrapeRunning ? handleCancelScrape : handleScrape}
+                  className={`inline-flex min-w-[220px] cursor-pointer items-center justify-center gap-2 rounded-[20px] px-8 py-4 text-sm font-semibold transition-[transform,box-shadow,background-color] duration-200 ${
+                    scrapeRunning
+                      ? 'bg-rose-600 text-white shadow-[0_18px_40px_rgba(225,29,72,0.22)] hover:-translate-y-px hover:bg-rose-700'
+                      : 'bg-gray-950 text-white shadow-[0_18px_40px_rgba(15,23,42,0.18)] hover:-translate-y-px hover:bg-gray-900'
+                  }`}
+                >
+                  {scrapeRunning ? <XCircle className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                  {scrapeRunning ? (scrapeJob?.id ? '取消采集' : '取消提交') : '开始采集 (Start Scraping)'}
+                </button>
+              </div>
+
+              <AnimatePresence>
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mt-6 flex items-start gap-3 rounded-[22px] border border-rose-200/70 bg-rose-50/80 p-5 text-rose-800"
+                  >
+                    <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                    <div>
+                      <strong className="block mb-1">错误</strong>
+                      <span className="text-sm">{error}</span>
+                    </div>
+                  </motion.div>
+                )}
+
+                {visualError && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mt-6 flex items-start gap-3 rounded-[22px] border border-amber-200/70 bg-amber-50/80 p-5 text-amber-800"
+                  >
+                    <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                    <div>
+                      <strong className="block mb-1">视觉复核提示</strong>
+                      <span className="text-sm">{visualError}</span>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div className="mt-6 space-y-3">
+                {renderJobCard('采集任务进度', scrapeJob, 'info')}
+                {renderJobCard('视觉复核任务进度', visualJob, 'warning')}
+              </div>
+            </motion.div>
+
+            <motion.div
+              custom={3}
+              initial="hidden"
+              animate="visible"
+              variants={bentoVariants}
+              className="mt-5 grid gap-5 xl:grid-cols-2"
+            >
+              {result && (
+                <div className={`${bentoCardClassName} p-7`}>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gray-400">Results Entry</p>
+                  <h3 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-gray-900">结果工作台入口</h3>
+                  <p className="mt-3 text-sm leading-6 text-gray-500">
+                    当前已经有可继续操作的 {activeResultPlatform} 结果。复核、导出和运行快照改为进入结果工作台后再查看。
+                  </p>
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-700">
+                      {resultWorkspaceStatus}
+                    </span>
+                    <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-700">
+                      {result.count} 条结果
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveWorkspace('results');
+                      setActiveResultTab('overview');
+                    }}
+                    className="mt-6 inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-gray-950 px-5 py-3 text-sm font-semibold text-white shadow-[0_16px_36px_rgba(15,23,42,0.16)] transition-[transform,box-shadow,background-color] duration-200 hover:-translate-y-px hover:bg-gray-900 hover:shadow-[0_18px_34px_rgba(15,23,42,0.20)]"
+                  >
+                    进入结果工作台
+                  </button>
+                </div>
+              )}
+
+              <div className={`${bentoCardClassName} p-7`}>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gray-400">Secondary Tool</p>
+                <h3 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-gray-900">RuleSpec 不再挤占主工作流</h3>
+                <p className="mt-3 text-sm leading-6 text-gray-500">
+                  它仍可用，但现在是二级工具。只有在你明确打开时，才会展开 SOP 编译与字段匹配面板。
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowTemplateWorkbench(true)}
+                  className="mt-6 inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 shadow-[0_12px_24px_rgba(15,23,42,0.06)] transition-[transform,box-shadow,border-color,background-color] duration-200 hover:-translate-y-px hover:border-gray-300 hover:bg-gray-50 hover:shadow-[0_16px_28px_rgba(15,23,42,0.08)]"
+                >
+                  打开 RuleSpec 工具
+                </button>
+              </div>
+            </motion.div>
+
+            {showTemplateWorkbench && (
+              <motion.div
+                custom={3}
+                initial="hidden"
+                animate="visible"
+                variants={bentoVariants}
+                className={`${bentoCardClassName} mt-5`}
+              >
+                <div className="flex flex-col gap-6">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gray-400">RuleSpec Compiler</p>
+                      <h3 className="mt-3 text-2xl font-semibold tracking-[-0.03em] text-gray-900">输入审核需求，编译 RuleSpec 与字段匹配报告</h3>
+                      <p className="mt-3 max-w-3xl text-sm leading-6 text-gray-500">
+                        这里不会直接执行审核，只会把你的 SOP 编译成受限 RuleSpec，并给出 TikTok、Instagram、YouTube 的字段匹配结果。V1 strict mode 里 YouTube 会稳定标记为 unsupported。
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setShowTemplateWorkbench(false)}
+                        className="inline-flex cursor-pointer items-center justify-center rounded-full border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50"
+                      >
+                        返回主工作流
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleGenerateTemplates}
+                        disabled={templateLoading}
+                        className={`inline-flex min-w-[220px] cursor-pointer items-center justify-center gap-2 rounded-[20px] px-8 py-4 text-sm font-semibold transition-[transform,box-shadow,background-color] duration-200 ${
+                          templateLoading
+                            ? 'bg-gray-300 text-white shadow-none cursor-wait'
+                            : 'bg-gray-950 text-white shadow-[0_18px_40px_rgba(15,23,42,0.18)] hover:-translate-y-px hover:bg-gray-900'
+                        }`}
+                      >
+                        <RefreshCw className={`h-5 w-5 ${templateLoading ? 'animate-spin' : ''}`} />
+                        {templateLoading ? '编译中...' : '编译 RuleSpec'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="rounded-[24px] border border-gray-200/70 bg-gray-50/70 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.95)] md:p-5">
+                    <textarea
+                      value={templateInput}
+                      onChange={(e) => setTemplateInput(e.target.value)}
+                      placeholder={TEMPLATE_PLACEHOLDER}
+                      className={`${formFieldClassName} min-h-[260px] resize-y leading-6`}
+                    />
+                    <div className="mt-3 flex flex-col gap-2 text-xs text-gray-500 md:flex-row md:items-center md:justify-between">
+                      <span>支持中英混合自由文本，建议按“目标 / 步骤 / 最终结果”结构输入。</span>
+                      <span>{templateInput.trim().length} 字符</span>
+                    </div>
+                  </div>
+
+                  <AnimatePresence>
+                    {templateError && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="flex items-start gap-3 rounded-[22px] border border-rose-200/70 bg-rose-50/80 p-5 text-rose-800"
+                      >
+                        <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                        <div>
+                          <strong className="mb-1 block">RuleSpec 编译失败</strong>
+                          <span className="text-sm">{templateError}</span>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {templateResult && (
+                    <div className="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                      <div className="space-y-4 rounded-[24px] border border-gray-200/70 bg-gray-50/70 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.95)]">
+                        <div>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">Parse Summary</p>
+                          <h4 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-gray-900">
+                            {templateResult.parsed_sop?.goal || '未识别到审核目标'}
+                          </h4>
+                          <p className="mt-2 text-sm leading-6 text-gray-500">
+                            共解析出 {parsedTemplateSteps.length} 个步骤。
+                            {Array.isArray(templateResult?.rule_spec?.out_of_scope_actions) ? ` 范围外动作 ${templateResult.rule_spec.out_of_scope_actions.length} 条。` : ''}
+                            {templateResult.output_dir ? ` 已写入 ${templateResult.output_dir}` : ''}
+                          </p>
+                        </div>
+
+                        <div className="grid gap-3 sm:grid-cols-3">
+                          {availableTemplatePlatforms.map((platform) => {
+                            const summary = templateResult.field_match_report?.platforms?.[platform]?.summary || {};
+                            return (
+                              <button
+                                key={platform}
+                                type="button"
+                                onClick={() => setTemplatePlatform(platform)}
+                                className={`rounded-[22px] border p-4 text-left transition-[transform,border-color,box-shadow] duration-200 ${
+                                  templatePlatform === platform
+                                    ? 'border-gray-900 bg-white shadow-[0_18px_34px_rgba(15,23,42,0.08)]'
+                                    : 'border-gray-200/80 bg-white hover:-translate-y-px hover:border-gray-300 hover:shadow-[0_10px_24px_rgba(15,23,42,0.05)]'
+                                }`}
+                              >
+                                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
+                                  {formatTemplatePlatformLabel(platform)}
+                                </p>
+                                <div className="mt-3 space-y-2 text-sm text-gray-600">
+                                  <div className="flex items-center justify-between">
+                                    <span>已匹配</span>
+                                    <span className="font-semibold text-emerald-700">{summary.matched || 0}</span>
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <span>部分匹配</span>
+                                    <span className="font-semibold text-amber-700">{summary.partial || 0}</span>
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <span>能力缺口</span>
+                                    <span className="font-semibold text-orange-700">{summary.missing_capabilities || 0}</span>
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <span>解析歧义</span>
+                                    <span className="font-semibold text-sky-700">{summary.ambiguous || 0}</span>
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <span>当前不支持</span>
+                                    <span className="font-semibold text-rose-700">{summary.unsupported || 0}</span>
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <span>敏感属性禁用</span>
+                                    <span className="font-semibold text-slate-700">{summary.blocked_sensitive_attribute || 0}</span>
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        <div className="rounded-[22px] border border-gray-200/80 bg-white p-4">
+                          <p className="text-sm font-semibold text-gray-900">解析步骤</p>
+                          <div className="mt-3 space-y-3">
+                            {parsedTemplateSteps.map((step) => (
+                              <div key={step.title} className="rounded-2xl border border-gray-200/70 bg-gray-50/70 p-3">
+                                <p className="text-sm font-semibold text-gray-900">{step.title}</p>
+                                <p className="mt-1 text-xs text-gray-500">
+                                  已识别 {step.rule_count || 0} 条规则
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4 rounded-[24px] border border-gray-200/70 bg-white p-5 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_18px_42px_rgba(15,23,42,0.05)]">
+                        <div className="flex flex-col gap-2 border-b border-gray-100 pb-4 md:flex-row md:items-end md:justify-between">
+                          <div>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">Platform Match Report</p>
+                            <h4 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-gray-900">
+                              {selectedTemplate ? `${formatTemplatePlatformLabel(templatePlatform)} 匹配报告` : '选择平台查看报告'}
+                            </h4>
+                          </div>
+                          {templateResult?.rule_spec?.final_logic && (
+                            <div className="rounded-full border border-gray-200 bg-gray-50 px-4 py-2 text-xs font-medium text-gray-600">
+                              Final Logic: {templateResult.rule_spec.final_logic}
+                            </div>
+                          )}
+                        </div>
+
+                        {selectedTemplate && (
+                          <>
+                            <div className="grid gap-3 md:grid-cols-2">
+                              <div className="rounded-[22px] border border-gray-200/80 bg-gray-50/70 p-4">
+                                <p className="text-sm font-semibold text-gray-900">字段映射依据</p>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                  {(selectedTemplate.mapping_basis || []).map((item) => (
+                                    <span key={item} className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-600">
+                                      {item}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="rounded-[22px] border border-gray-200/80 bg-gray-50/70 p-4">
+                                <p className="text-sm font-semibold text-gray-900">平台结论</p>
+                                <p className="mt-3 text-sm leading-6 text-gray-600">
+                                  {selectedTemplate.platform_note || `当前共有 ${selectedTemplateGaps.length} 条规则需要人工确认、补字段或补采集能力。`}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="space-y-3">
+                              {selectedTemplateChecks.map((check) => (
+                                <div key={check.rule_id} className="rounded-[22px] border border-gray-200/80 bg-gray-50/60 p-4">
+                                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                                    <div className="min-w-0">
+                                      <p className="text-sm font-semibold text-gray-900">{check.source_text}</p>
+                                      <p className="mt-1 text-xs text-gray-500">
+                                        {check.step_title} · {check.rule_type}
+                                      </p>
+                                    </div>
+                                    <span className={`inline-flex shrink-0 items-center rounded-full border px-3 py-1 text-xs font-semibold ${getTemplateStatusClassName(check.status)}`}>
+                                      {formatTemplateStatusLabel(check.status)}
+                                    </span>
+                                  </div>
+
+                                  <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                                    <div className="rounded-2xl border border-gray-200/70 bg-white p-3">
+                                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400">Fields</p>
+                                      <p className="mt-2 text-sm leading-6 text-gray-600 break-all">
+                                        {Array.isArray(check.matched_fields) && check.matched_fields.length > 0 ? check.matched_fields.join(', ') : '当前没有稳定字段支撑'}
+                                      </p>
+                                    </div>
+                                    <div className="rounded-2xl border border-gray-200/70 bg-white p-3">
+                                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400">Capabilities / Notes</p>
+                                      <p className="mt-2 text-sm leading-6 text-gray-600">
+                                        {Array.isArray(check.required_capabilities) && check.required_capabilities.length > 0 ? `需要 ${check.required_capabilities.join(', ')}。` : ''}
+                                        {Array.isArray(check.missing_capabilities) && check.missing_capabilities.length > 0 ? ` 缺口 ${check.missing_capabilities.join(', ')}。` : ''}
+                                        {check.notes ? ` ${check.notes}` : ' 无额外说明'}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            {selectedTemplateBlockedRules.length > 0 && (
+                              <div className="rounded-[22px] border border-slate-200/80 bg-slate-50/90 p-4">
+                                <p className="text-sm font-semibold text-slate-900">已阻止的敏感属性规则</p>
+                                <div className="mt-3 space-y-2">
+                                  {selectedTemplateBlockedRules.map((rule) => (
+                                    <div key={rule.rule_id} className="rounded-2xl border border-slate-200/80 bg-white p-3 text-sm text-slate-700">
+                                      <p className="font-medium text-slate-900">{rule.source_text}</p>
+                                      <p className="mt-1 text-xs text-slate-500">{rule.notes || rule.policy_reason || '该规则不应自动化执行'}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </>
+        )}
+
         <AnimatePresence>
-          {result && (
+          {result && activeWorkspace === 'results' && (
             <motion.div
               custom={4}
               initial="hidden"
@@ -2870,465 +3053,40 @@ function App() {
                     </div>
                     <h4 className="mt-3 text-base font-semibold text-gray-900">{item.title}</h4>
                     <p className="mt-2 text-sm leading-6 text-gray-700">{item.description}</p>
-                    <p className="mt-2 text-sm font-medium leading-6 text-gray-900">下一步：{item.nextAction}</p>
                   </div>
                 ))}
               </div>
 
               <div className="mt-8">
-                <input
-                  id="result-view-overview"
-                  type="radio"
-                  name="result-view"
-                  defaultChecked
-                  className="peer/result-overview sr-only"
-                />
-                <input
-                  id="result-view-profiles"
-                  type="radio"
-                  name="result-view"
-                  className="peer/result-profiles sr-only"
-                />
-
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                  <div className="inline-flex w-full rounded-2xl bg-gray-100/90 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] md:max-w-[280px]">
-                    <label
-                      htmlFor="result-view-overview"
-                      className="flex-1 cursor-pointer rounded-xl px-4 py-3 text-center text-sm font-semibold text-gray-500 transition-all duration-200 peer-checked/result-overview:bg-white peer-checked/result-overview:text-gray-900 peer-checked/result-overview:shadow-[0_1px_2px_rgba(15,23,42,0.06),0_12px_30px_rgba(15,23,42,0.08)]"
-                    >
-                      概览
-                    </label>
-                    <label
-                      htmlFor="result-view-profiles"
-                      className="flex-1 cursor-pointer rounded-xl px-4 py-3 text-center text-sm font-semibold text-gray-500 transition-all duration-200 peer-checked/result-profiles:bg-white peer-checked/result-profiles:text-gray-900 peer-checked/result-profiles:shadow-[0_1px_2px_rgba(15,23,42,0.06),0_12px_30px_rgba(15,23,42,0.08)]"
-                    >
-                      博主卡片
-                    </label>
+                  <div className="inline-flex w-full rounded-2xl bg-gray-100/90 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] md:max-w-[520px]">
+                    {resultTabOptions.map((item) => {
+                      const selected = activeResultTab === item.key;
+                      return (
+                        <button
+                          key={item.key}
+                          type="button"
+                          onClick={() => setActiveResultTab(item.key)}
+                          className={`flex-1 rounded-xl px-4 py-3 text-center text-sm font-semibold transition-all duration-200 ${
+                            selected
+                              ? 'bg-white text-gray-900 shadow-[0_1px_2px_rgba(15,23,42,0.06),0_12px_30px_rgba(15,23,42,0.08)]'
+                              : 'text-gray-500 hover:text-gray-700'
+                          }`}
+                        >
+                          {item.label}
+                        </button>
+                      );
+                    })}
                   </div>
-                  <p className="text-sm text-gray-500">保留概览和博主卡片两个高价值视图，原始数据面板先收掉。</p>
+                  <p className="text-sm text-gray-500">
+                    当前视图：
+                    <span className="font-medium text-gray-700"> {activeResultTabLabel}</span>
+                    。概览只保留摘要，视觉复核与导出交接各自归位。
+                  </p>
                 </div>
 
-                {showVisualReviewDesk && (
-                  <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1.08fr)_minmax(320px,0.92fr)]">
-                    <motion.div
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="rounded-[24px] border border-gray-200/70 bg-white p-5 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_18px_42px_rgba(15,23,42,0.05)] md:p-6"
-                    >
-                      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                        <div>
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">Visual Review Desk</p>
-                          <h4 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-gray-900">九宫格推理日志</h4>
-                          <p className="mt-2 text-sm leading-6 text-gray-500">
-                            当前主面板支持停留在刚完成的博主上回看，也可以一键切回实时复核对象。
-                          </p>
-                        </div>
-                        <div className="flex flex-wrap items-center justify-end gap-2">
-                          <div className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600">
-                            {effectiveSelectedVisualReview?.username || (visualLoading ? '等待首个对象' : '视觉复核待命')}
-                          </div>
-                          {canReturnToLiveReview && (
-                            <button
-                              type="button"
-                              onClick={handleReturnToLiveReview}
-                              className="inline-flex cursor-pointer items-center rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50"
-                            >
-                              回到当前复核中
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="mt-5 flex flex-col gap-3 rounded-[22px] border border-gray-200/70 bg-[#FCFCFC] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.96)] sm:flex-row sm:items-center sm:justify-between">
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleVisualReviewNavigation('prev')}
-                            disabled={!canNavigateToPreviousReview}
-                            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
-                          >
-                            <ChevronLeft className="h-4 w-4" />
-                          </button>
-                          <span className="inline-flex min-w-[72px] items-center justify-center rounded-full border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-600">
-                            {visualReviewPositionLabel}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleVisualReviewNavigation('next')}
-                            disabled={!canNavigateToNextReview}
-                            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
-                          >
-                            <ChevronRight className="h-4 w-4" />
-                          </button>
-                        </div>
-                        <p className="text-sm text-gray-500">
-                          {isViewingVisualReviewHistory
-                            ? `当前查看 @${effectiveSelectedVisualReview?.username || '未知对象'} 的已完成结果`
-                            : (hasRunningLiveReview && activeLiveReviewSnapshot?.username
-                              ? `当前实时对象 @${activeLiveReviewSnapshot.username}`
-                              : '视觉复核启动后，这里会优先展示实时对象。')}
-                        </p>
-                      </div>
-
-                      <div className="mt-5 grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
-                        <div className="group/preview relative">
-                          <button
-                            type="button"
-                            onClick={() => effectiveVisualReviewCollageUrl && setVisualPreviewModal(effectiveVisualReviewCollageUrl)}
-                            className={`block w-full text-left ${effectiveVisualReviewCollageUrl ? 'cursor-zoom-in' : 'cursor-default'}`}
-                          >
-                            <div className="relative aspect-square overflow-hidden rounded-[22px] border border-gray-200/80 bg-[#F6F6F6] shadow-[inset_0_1px_0_rgba(255,255,255,0.95)] transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-[0_16px_36px_rgba(15,23,42,0.10)]">
-                              {effectiveVisualReviewCollageUrl ? (
-                                <img
-                                  src={effectiveVisualReviewCollageUrl}
-                                  alt={effectiveSelectedVisualReview?.username ? `${effectiveSelectedVisualReview.username} 九宫格预览` : '九宫格预览'}
-                                  className="h-full w-full object-cover"
-                                />
-                              ) : (
-                                <div className="flex h-full w-full items-center justify-center px-6 text-center text-sm leading-6 text-gray-400">
-                                  视觉复核开始后，当前选中的九宫格会显示在这里。
-                                </div>
-                              )}
-                              {effectiveVisualReviewCollageUrl && (
-                                <>
-                                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-gray-900/8 via-transparent to-transparent" />
-                                  <div className="pointer-events-none absolute bottom-3 left-3 rounded-full border border-white/80 bg-white/90 px-3 py-1.5 text-[11px] font-medium text-gray-700 shadow-[0_6px_18px_rgba(15,23,42,0.10)]">
-                                    悬停放大 · 点击查看
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                          </button>
-
-                          {effectiveVisualReviewCollageUrl && (
-                            <div className="pointer-events-none absolute left-[calc(100%+18px)] top-0 z-30 hidden w-[320px] rounded-[26px] border border-gray-200/80 bg-white p-3 opacity-0 shadow-[0_20px_60px_rgba(15,23,42,0.12)] transition duration-200 xl:block xl:group-hover/preview:opacity-100">
-                              <img
-                                src={effectiveVisualReviewCollageUrl}
-                                alt="九宫格放大预览"
-                                className="aspect-square w-full rounded-[20px] object-cover"
-                              />
-                            </div>
-                          )}
-
-                          {effectiveVisualReviewPreviewUrls.length > 1 && (
-                            <div className="mt-3 grid grid-cols-2 gap-2">
-                              {effectiveVisualReviewPreviewUrls.map((previewUrl, previewIndex) => {
-                                const isReviewedPreview = previewIndex < effectiveVisualReviewedCollageCount;
-                                const previewLabel = isReviewedPreview
-                                  ? `九宫格 ${previewIndex + 1}`
-                                  : `九宫格 ${previewIndex + 1} · 保留预览`;
-                                return (
-                                  <button
-                                    key={`${previewUrl}-${previewIndex}`}
-                                    type="button"
-                                    onClick={() => setVisualPreviewModal(previewUrl)}
-                                    className="overflow-hidden rounded-[18px] border border-gray-200/80 bg-white text-left shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:-translate-y-0.5 hover:border-gray-300"
-                                  >
-                                    <img
-                                      src={previewUrl}
-                                      alt={previewLabel}
-                                      className="aspect-square w-full object-cover"
-                                    />
-                                    <div className={`border-t px-3 py-2 text-[11px] font-medium ${
-                                      isReviewedPreview
-                                        ? 'border-gray-100 text-gray-500'
-                                        : 'border-amber-100 bg-amber-50/80 text-amber-700'
-                                    }`}>
-                                      {previewLabel}
-                                    </div>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-700">
-                              {formatLiveReviewStep(effectiveSelectedVisualReview?.step)}
-                            </span>
-                            {showVisualCoverProgressSummary ? (
-                              <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-700">
-                                封面 {effectiveVisualCoverLoadedCount}/{effectiveVisualCoverRequestedCount}
-                              </span>
-                            ) : typeof effectiveSelectedVisualReview?.coverCount === 'number' && (
-                              <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-700">
-                                封面 {effectiveSelectedVisualReview.coverCount}
-                              </span>
-                            )}
-                            {typeof effectiveVisualCoverCurrentTotal === 'number' && effectiveVisualCoverCurrentTotal > 0 && typeof effectiveVisualCoverCurrentIndex === 'number' && (
-                              <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-700">
-                                进度 {effectiveVisualCoverCurrentIndex}/{effectiveVisualCoverCurrentTotal}
-                              </span>
-                            )}
-                            {effectiveVisualCoverFailedCount > 0 && (
-                              <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700">
-                                失败 {effectiveVisualCoverFailedCount}
-                              </span>
-                            )}
-                            {effectiveSelectedVisualReview?.decision && (
-                              <span className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium ${
-                                effectiveSelectedVisualReview.decision === 'Reject'
-                                  ? 'border-rose-200 bg-rose-50 text-rose-700'
-                                  : effectiveSelectedVisualReview.decision === 'Error'
-                                    ? 'border-amber-200 bg-amber-50 text-amber-700'
-                                    : 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                              }`}>
-                                {effectiveSelectedVisualReview.decision}
-                              </span>
-                            )}
-                            {effectiveVisualReviewCollageCount > 0 && (
-                              <span className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600">
-                                九宫格 {effectiveVisualReviewCollageCount}{effectiveVisualReviewTargetCollageCount ? ` / ${effectiveVisualReviewTargetCollageCount}` : ''}
-                              </span>
-                            )}
-                            {effectiveVisualReviewedCollageCount > 0 && effectiveVisualReviewedCollageCount !== effectiveVisualReviewCollageCount && (
-                              <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700">
-                                实际送审 {effectiveVisualReviewedCollageCount}
-                              </span>
-                            )}
-                            {effectiveVisualUnusedCollageCount > 0 && (
-                              <span className="inline-flex items-center rounded-full border border-amber-200 bg-white px-3 py-1.5 text-xs font-medium text-amber-700">
-                                保留预览 {effectiveVisualUnusedCollageCount}
-                              </span>
-                            )}
-                            {effectiveVisualCollageErrorCount > 0 && (
-                              <span className="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700">
-                                拼图失败 {effectiveVisualCollageErrorCount}
-                              </span>
-                            )}
-                            {effectiveVisualAppliedMode && (
-                              <span className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600">
-                                实际模式 {effectiveVisualAppliedMode === VISUAL_REVIEW_MODE_SIMPLE ? '简单' : '加强'}
-                              </span>
-                            )}
-                            {effectiveVisualRequestedMode && (
-                              <span className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-500">
-                                请求 {effectiveVisualRequestedMode === VISUAL_REVIEW_MODE_SIMPLE ? '简单' : effectiveVisualRequestedMode === VISUAL_REVIEW_MODE_ENHANCED ? '加强' : '自动推荐'}
-                              </span>
-                            )}
-                          </div>
-
-                          {showVisualCoverProgressSummary && (
-                            <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-500">
-                              <span className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1">
-                                封面加载 {effectiveVisualCoverCurrentIndex || effectiveVisualCoverRequestedCount}/{effectiveVisualCoverCurrentTotal || effectiveVisualCoverRequestedCount}
-                              </span>
-                              <span className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1">
-                                成功 {effectiveVisualCoverLoadedCount} · 失败 {effectiveVisualCoverFailedCount}
-                              </span>
-                              {typeof effectiveSelectedVisualReview?.minRequiredCoverCount === 'number' && (
-                                <span className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1">
-                                  至少 {effectiveSelectedVisualReview.minRequiredCoverCount} 张可继续
-                                </span>
-                              )}
-                            </div>
-                          )}
-
-                          {(effectiveVisualDowngradeReason || effectiveVisualRecommendedMode || effectiveVisualUnusedCollageCount > 0) && (
-                            <div className="mt-3 space-y-2">
-                              {effectiveVisualRecommendedMode && (
-                                <div className="rounded-2xl border border-sky-200/70 bg-sky-50/80 px-4 py-3 text-sm leading-6 text-sky-800">
-                                  系统建议模式：{effectiveVisualRecommendedMode === VISUAL_REVIEW_MODE_SIMPLE ? '简单' : '加强'}
-                                </div>
-                              )}
-                              {effectiveVisualUnusedCollageCount > 0 && (
-                                <div className="rounded-2xl border border-amber-200/70 bg-amber-50/80 px-4 py-3 text-sm leading-6 text-amber-800">
-                                  当前共生成 {effectiveVisualReviewCollageCount} 张九宫格，其中 {effectiveVisualReviewedCollageCount} 张已送审，其余 {effectiveVisualUnusedCollageCount} 张仅保留给人工核对。
-                                </div>
-                              )}
-                              {effectiveVisualDowngradeReason && (
-                                <div className="rounded-2xl border border-amber-200/70 bg-amber-50/80 px-4 py-3 text-sm leading-6 text-amber-800">
-                                  {effectiveVisualDowngradeReason}
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          <div className="mt-4 rounded-[22px] border border-gray-200/70 bg-[#FCFCFC] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.96)]">
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                              <div>
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">Reasoning Log</p>
-                                <p className="mt-1 text-sm font-medium text-gray-700">
-                                  {effectiveSelectedVisualReview?.username
-                                    ? (isViewingVisualReviewHistory
-                                      ? `当前查看 @${effectiveSelectedVisualReview.username}`
-                                      : `当前正在审阅 @${effectiveSelectedVisualReview.username}`)
-                                    : (visualLoading ? '视觉复核已启动，等待返回首个九宫格。' : '开始视觉复核后，这里会显示当前博主的推理日志。')}
-                                </p>
-                              </div>
-                              <span className="inline-flex w-fit items-center rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-500">
-                                {effectiveVisualReviewLogs.length} 条日志
-                              </span>
-                            </div>
-
-                            <div className="mt-4 max-h-[220px] space-y-2 overflow-y-auto pr-1">
-                              {effectiveVisualReviewLogs.length > 0 ? (
-                                <AnimatePresence initial={false}>
-                                  {effectiveVisualReviewLogs.map((log) => (
-                                    <motion.div
-                                      key={log.id}
-                                      initial={{ opacity: 0, y: 8 }}
-                                      animate={{ opacity: 1, y: 0 }}
-                                      exit={{ opacity: 0, y: -8 }}
-                                      className={`rounded-2xl border px-4 py-3 text-sm leading-6 shadow-[0_1px_2px_rgba(15,23,42,0.03)] ${getLiveReviewToneClassName(log.tone)}`}
-                                    >
-                                      {log.text}
-                                    </motion.div>
-                                  ))}
-                                </AnimatePresence>
-                              ) : (
-                                <div className="rounded-2xl border border-dashed border-gray-200/80 bg-white/90 px-4 py-8 text-center text-sm text-gray-500">
-                                  当前还没有可显示的日志。视觉复核启动后，会在这里逐句刷新。
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-
-                    <motion.div
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="rounded-[24px] border border-gray-200/70 bg-white p-5 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_18px_42px_rgba(15,23,42,0.05)]"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">Review Queue</p>
-                          <h4 className="mt-2 text-lg font-semibold tracking-[-0.03em] text-gray-900">视觉复核状态</h4>
-                          <p className="mt-2 text-sm leading-6 text-gray-500">
-                            已完成列表支持点选跳转，实时对象单独保留一个入口，不会抢走你正在看的历史项。
-                          </p>
-                        </div>
-                        <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-700">
-                          {visualProgress.done} / {visualProgress.total || '—'}
-                        </span>
-                      </div>
-
-                      <div className="mt-5 h-2.5 overflow-hidden rounded-full bg-gray-100">
-                        <motion.div
-                          className="h-full bg-gray-900"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${visualReviewProgressPercent}%` }}
-                        />
-                      </div>
-
-                      <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                        <div className="rounded-2xl border border-gray-200/80 bg-[#FCFCFC] px-4 py-4">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400">Passed</p>
-                          <p className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-emerald-600">{visualPassedCount}</p>
-                        </div>
-                        <div className="rounded-2xl border border-gray-200/80 bg-[#FCFCFC] px-4 py-4">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400">Rejected</p>
-                          <p className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-rose-600">{visualRejectedCount}</p>
-                        </div>
-                        <div className="rounded-2xl border border-gray-200/80 bg-[#FCFCFC] px-4 py-4">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400">Failed</p>
-                          <p className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-amber-600">{visualFailedCount}</p>
-                        </div>
-                      </div>
-
-                      <div className="mt-5">
-                        {hasRunningLiveReview && activeLiveReviewSnapshot && (
-                          <button
-                            type="button"
-                            onClick={handleReturnToLiveReview}
-                            className={`mb-3 flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${
-                              visualReviewSelection.mode === 'live'
-                                ? 'border-gray-900 bg-gray-900 text-white'
-                                : 'border-gray-200/80 bg-[#FCFCFC] text-gray-700 hover:border-gray-300 hover:bg-white'
-                            }`}
-                          >
-                            <div>
-                              <p className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${visualReviewSelection.mode === 'live' ? 'text-gray-200' : 'text-gray-400'}`}>
-                                Live Review
-                              </p>
-                              <p className="mt-1 font-semibold">
-                                @{activeLiveReviewSnapshot.username}
-                              </p>
-                            </div>
-                            <span className={`rounded-full px-3 py-1 text-xs font-medium ${
-                              visualReviewSelection.mode === 'live'
-                                ? 'bg-white/12 text-white'
-                                : 'border border-gray-200 bg-white text-gray-600'
-                            }`}>
-                              {formatLiveReviewStep(activeLiveReviewSnapshot.step)}
-                            </span>
-                          </button>
-                        )}
-
-                        <div className="mb-3 flex items-center justify-between gap-3">
-                          <h5 className="text-sm font-semibold text-gray-900">已完成复核</h5>
-                          <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-500">
-                            {visualReviewHistory.length} 条
-                          </span>
-                        </div>
-
-                        {visualReviewHistory.length > 0 ? (
-                          <ul className="max-h-[280px] space-y-3 overflow-y-auto pr-1">
-                            <AnimatePresence initial={false}>
-                              {visualReviewHistory.map((item, index) => {
-                                  const isSuccess = item.success !== false && item.decision !== 'Reject';
-                                  const isSelected = visualReviewSelection.mode === 'history'
-                                    && effectiveSelectedVisualReview?.key === item.key;
-                                  const outcomeLabel = formatVisualReviewOutcomeLabel(item);
-                                  return (
-                                    <motion.li
-                                      key={`${item.key}-visual`}
-                                      initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                                      exit={{ opacity: 0, y: -8, scale: 0.98 }}
-                                      className="list-none"
-                                    >
-                                      <button
-                                        type="button"
-                                        onClick={() => selectVisualReviewHistoryByIndex(index)}
-                                        className={`flex w-full items-start gap-3 rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${
-                                          isSelected
-                                            ? 'border-gray-900 bg-gray-900 text-white'
-                                            : 'border-gray-200/70 bg-[#FCFCFC] text-gray-700 hover:border-gray-300 hover:bg-white'
-                                        }`}
-                                      >
-                                        {isSuccess
-                                          ? <CheckCircle className={`h-5 w-5 shrink-0 ${isSelected ? 'text-emerald-300' : 'text-emerald-500'}`} />
-                                          : <XCircle className={`h-5 w-5 shrink-0 ${isSelected ? 'text-rose-300' : 'text-rose-500'}`} />}
-                                        <div className="min-w-0">
-                                          <div className="flex flex-wrap items-center gap-2">
-                                            <span className={`font-semibold ${isSelected ? 'text-white' : 'text-gray-900'}`}>{item.username}</span>
-                                            <span className={`font-medium ${
-                                              isSelected
-                                                ? 'text-gray-200'
-                                                : (isSuccess ? 'text-emerald-600' : 'text-rose-600')
-                                            }`}>
-                                              {outcomeLabel}
-                                            </span>
-                                          </div>
-                                          {formatVisualReviewSummary(item) && (
-                                            <p className={`mt-2 ${isSelected ? 'text-gray-200' : 'text-gray-600'}`}>
-                                              {formatVisualReviewSummary(item)}
-                                            </p>
-                                          )}
-                                        </div>
-                                      </button>
-                                    </motion.li>
-                                  );
-                                })}
-                            </AnimatePresence>
-                          </ul>
-                        ) : (
-                          <div className="rounded-2xl border border-dashed border-gray-200/80 bg-gray-50/70 px-4 py-10 text-center text-sm text-gray-500">
-                            视觉复核开始后，已完成的结果会实时出现在这里。
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  </div>
-                )}
-
-                <div className="mt-6 hidden peer-checked/result-overview:block">
-                  <div className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.9fr)]">
+                {activeResultTab === 'overview' && (
+                  <div className="mt-6 space-y-4">
                     <div className="rounded-[24px] border border-gray-200/70 bg-[#FCFCFC] p-6 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_16px_40px_rgba(15,23,42,0.04)] md:p-7">
                       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                         <div className="rounded-2xl border border-gray-200/80 bg-white px-4 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
@@ -3352,181 +3110,623 @@ function App() {
                           <p className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-rose-600">{resultRejectedCount}</p>
                         </div>
                       </div>
+                    </div>
+
+                    <div className="max-w-[460px] rounded-[24px] border border-gray-200/80 bg-white px-5 py-5 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">Next Action</p>
+                      <h4 className="mt-2 text-base font-semibold text-gray-900">当前最该做什么</h4>
+                      <p className="mt-3 text-sm leading-6 text-gray-500">
+                        {visualReviewCompleted || hasFinalReviewExport
+                          ? (hasInMemoryFinalReviewData
+                            ? '当前页面内已有完整初筛 + 视觉复核输入，下一步进入导出交接即可导出 final-review Excel。'
+                            : '后端已保存可复用 artifact，下一步进入导出交接即可继续 final-review 导出。')
+                          : hasVisualReviewCandidates
+                            ? `当前有 ${visualReviewCandidates.length} 个候选账号可做视觉复核，建议先进入视觉复核工作台。`
+                            : result.is_partial
+                              ? '采集仍在继续。下一步建议返回运行工作台观察任务进度，或先留在概览看增量结果。'
+                              : '当前没有新的视觉复核动作需要推进，下一步建议进入导出交接做结果导出与交接。'}
+                      </p>
+                      <div className="mt-4">
+                        {visualReviewCompleted || hasFinalReviewExport ? (
+                          <button
+                            type="button"
+                            onClick={() => setActiveResultTab('export-handoff')}
+                            className="inline-flex cursor-pointer items-center justify-center rounded-full bg-gray-950 px-5 py-3 text-sm font-semibold text-white shadow-[0_16px_36px_rgba(15,23,42,0.16)] transition-[transform,box-shadow,background-color] duration-200 hover:-translate-y-px hover:bg-gray-900"
+                          >
+                            前往导出交接
+                          </button>
+                        ) : hasVisualReviewCandidates ? (
+                          <button
+                            type="button"
+                            onClick={() => setActiveResultTab('visual-review')}
+                            className="inline-flex cursor-pointer items-center justify-center rounded-full bg-gray-950 px-5 py-3 text-sm font-semibold text-white shadow-[0_16px_36px_rgba(15,23,42,0.16)] transition-[transform,box-shadow,background-color] duration-200 hover:-translate-y-px hover:bg-gray-900"
+                          >
+                            前往视觉复核
+                          </button>
+                        ) : result.is_partial ? (
+                          <button
+                            type="button"
+                            onClick={() => setActiveWorkspace('run')}
+                            className="inline-flex cursor-pointer items-center justify-center rounded-full border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 shadow-[0_12px_24px_rgba(15,23,42,0.06)] transition-[transform,box-shadow,border-color,background-color] duration-200 hover:-translate-y-px hover:border-gray-300 hover:bg-gray-50"
+                          >
+                            返回运行工作台
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setActiveResultTab('export-handoff')}
+                            className="inline-flex cursor-pointer items-center justify-center rounded-full border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 shadow-[0_12px_24px_rgba(15,23,42,0.06)] transition-[transform,box-shadow,border-color,background-color] duration-200 hover:-translate-y-px hover:border-gray-300 hover:bg-gray-50"
+                          >
+                            查看导出交接
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeResultTab === 'profiles' && (
+                  <div className="mt-6">
+                    {resultProfileReviews.length > 0 ? (
+                      renderProfileCards()
+                    ) : (
+                      <div className="rounded-[24px] border border-dashed border-gray-200/80 bg-gray-50/70 px-6 py-12 text-center text-sm text-gray-500">
+                        当前还没有可展示的博主卡片结果。
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeResultTab === 'visual-review' && (
+                  <div className="mt-6 space-y-4">
+                    <div className="rounded-[24px] border border-gray-200/80 bg-white px-5 py-5 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">Visual Review Mode</p>
+                          <h4 className="mt-2 text-base font-semibold text-gray-900">视觉复核</h4>
+                          <p className="mt-2 text-sm leading-6 text-gray-500">
+                            {hasVisualReviewCandidates
+                              ? visualReviewRecommendation.text
+                              : '当前没有新的候选账号可进入视觉复核；如果之前已经启动过任务，下方仍会保留 desk 与历史队列。'}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            { value: VISUAL_REVIEW_MODE_SIMPLE, label: '简单', hint: '单九宫格，最多 9 张' },
+                            { value: VISUAL_REVIEW_MODE_AUTO, label: '自动推荐', hint: '按可用图数自动升降级' },
+                            { value: VISUAL_REVIEW_MODE_ENHANCED, label: '加强', hint: '双九宫格，最多 18 张' },
+                          ].map((option) => {
+                            const selected = visualReviewMode === option.value;
+                            return (
+                              <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => setVisualReviewMode(option.value)}
+                                className={`rounded-2xl border px-4 py-3 text-left transition ${
+                                  selected
+                                    ? 'border-gray-900 bg-gray-900 text-white shadow-[0_10px_24px_rgba(15,23,42,0.16)]'
+                                    : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300 hover:bg-white'
+                                }`}
+                              >
+                                <div className="text-sm font-semibold">{option.label}</div>
+                                <div className={`mt-1 text-xs ${selected ? 'text-gray-200' : 'text-gray-500'}`}>{option.hint}</div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
 
                       {hasVisualReviewCandidates && (
-                        <div className="mt-6 rounded-[24px] border border-gray-200/80 bg-white px-4 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
-                          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                        <button
+                          type="button"
+                          onClick={handleVisualReview}
+                          disabled={visualLoading}
+                          className="mt-5 inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-gray-950 px-5 py-3 text-sm font-semibold text-white shadow-[0_16px_36px_rgba(15,23,42,0.16)] transition-[transform,box-shadow,background-color] duration-200 hover:-translate-y-px hover:bg-gray-900 hover:shadow-[0_18px_34px_rgba(15,23,42,0.20)] disabled:cursor-not-allowed disabled:opacity-70"
+                        >
+                          {visualLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                          {visualLoading
+                            ? '视觉复核进行中...'
+                            : `开始视觉复核（${visualReviewMode === VISUAL_REVIEW_MODE_SIMPLE ? '简单' : visualReviewMode === VISUAL_REVIEW_MODE_ENHANCED ? '加强' : '自动推荐'}）`}
+                        </button>
+                      )}
+                    </div>
+
+                    {showVisualReviewDesk ? (
+                      <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_340px] 2xl:items-start">
+                        <motion.div
+                          initial={{ opacity: 0, y: 12 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="rounded-[24px] border border-gray-200/70 bg-white p-5 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_18px_42px_rgba(15,23,42,0.05)] md:p-6"
+                        >
+                          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                             <div>
-                              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">Visual Review Mode</p>
-                              <p className="mt-1 text-sm font-medium text-gray-800">
-                                系统建议：{visualReviewRecommendation.mode === VISUAL_REVIEW_MODE_SIMPLE
-                                  ? '简单'
-                                  : visualReviewRecommendation.mode === VISUAL_REVIEW_MODE_ENHANCED
-                                    ? '加强'
-                                    : '自动推荐'}
+                              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">Visual Review Desk</p>
+                              <h4 className="mt-2 text-xl font-semibold tracking-[-0.03em] text-gray-900">九宫格推理日志</h4>
+                              <p className="mt-2 text-sm leading-6 text-gray-500">
+                                当前主面板支持停留在刚完成的博主上回看，也可以一键切回实时复核对象。
                               </p>
-                              <p className="mt-1 text-sm leading-6 text-gray-500">{visualReviewRecommendation.text}</p>
                             </div>
-                            <div className="flex flex-wrap gap-2">
-                              {[
-                                { value: VISUAL_REVIEW_MODE_SIMPLE, label: '简单', hint: '单九宫格，最多 9 张' },
-                                { value: VISUAL_REVIEW_MODE_AUTO, label: '自动推荐', hint: '按可用图数自动升降级' },
-                                { value: VISUAL_REVIEW_MODE_ENHANCED, label: '加强', hint: '双九宫格，最多 18 张' },
-                              ].map((option) => {
-                                const selected = visualReviewMode === option.value;
-                                return (
-                                  <button
-                                    key={option.value}
-                                    type="button"
-                                    onClick={() => setVisualReviewMode(option.value)}
-                                    className={`rounded-2xl border px-4 py-3 text-left transition ${
-                                      selected
-                                        ? 'border-gray-900 bg-gray-900 text-white shadow-[0_10px_24px_rgba(15,23,42,0.16)]'
-                                        : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300 hover:bg-white'
-                                    }`}
-                                  >
-                                    <div className="text-sm font-semibold">{option.label}</div>
-                                    <div className={`mt-1 text-xs ${selected ? 'text-gray-200' : 'text-gray-500'}`}>{option.hint}</div>
-                                  </button>
-                                );
-                              })}
+                            <div className="flex flex-wrap items-center justify-end gap-2">
+                              <div className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600">
+                                {effectiveSelectedVisualReview?.username || (visualLoading ? '等待首个对象' : '视觉复核待命')}
+                              </div>
+                              {canReturnToLiveReview && (
+                                <button
+                                  type="button"
+                                  onClick={handleReturnToLiveReview}
+                                  className="inline-flex cursor-pointer items-center rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50"
+                                >
+                                  回到当前复核中
+                                </button>
+                              )}
                             </div>
                           </div>
-                        </div>
-                      )}
 
-                      <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
-                        <div className="grid gap-4">
-                          {exportActionGroups.map((group) => (
-                            <div key={group.key} className="rounded-[24px] border border-gray-200/80 bg-white px-4 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
-                              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">{group.eyebrow}</p>
-                              <div className="mt-2 flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
-                                <div>
-                                  <h4 className="text-base font-semibold text-gray-900">{group.title}</h4>
-                                  <p className="mt-1 text-sm leading-6 text-gray-500">{group.description}</p>
+                          <div className="mt-5 flex flex-col gap-3 rounded-[22px] border border-gray-200/70 bg-[#FCFCFC] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.96)] sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => handleVisualReviewNavigation('prev')}
+                                disabled={!canNavigateToPreviousReview}
+                                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                              >
+                                <ChevronLeft className="h-4 w-4" />
+                              </button>
+                              <span className="inline-flex min-w-[72px] items-center justify-center rounded-full border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-600">
+                                {visualReviewPositionLabel}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleVisualReviewNavigation('next')}
+                                disabled={!canNavigateToNextReview}
+                                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                              >
+                                <ChevronRight className="h-4 w-4" />
+                              </button>
+                            </div>
+                            <p className="text-sm text-gray-500">
+                              {isViewingVisualReviewHistory
+                                ? `当前查看 @${effectiveSelectedVisualReview?.username || '未知对象'} 的已完成结果`
+                                : (hasRunningLiveReview && activeLiveReviewSnapshot?.username
+                                  ? `当前实时对象 @${activeLiveReviewSnapshot.username}`
+                                  : '视觉复核启动后，这里会优先展示实时对象。')}
+                            </p>
+                          </div>
+
+                          <div className="mt-5 grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
+                            <div className="group/preview relative">
+                              <button
+                                type="button"
+                                onClick={() => effectiveVisualReviewCollageUrl && setVisualPreviewModal(effectiveVisualReviewCollageUrl)}
+                                className={`block w-full text-left ${effectiveVisualReviewCollageUrl ? 'cursor-zoom-in' : 'cursor-default'}`}
+                              >
+                                <div className="relative aspect-square overflow-hidden rounded-[22px] border border-gray-200/80 bg-[#F6F6F6] shadow-[inset_0_1px_0_rgba(255,255,255,0.95)] transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-[0_16px_36px_rgba(15,23,42,0.10)]">
+                                  {effectiveVisualReviewCollageUrl ? (
+                                    <img
+                                      src={effectiveVisualReviewCollageUrl}
+                                      alt={effectiveSelectedVisualReview?.username ? `${effectiveSelectedVisualReview.username} 九宫格预览` : '九宫格预览'}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="flex h-full w-full items-center justify-center px-6 text-center text-sm leading-6 text-gray-400">
+                                      视觉复核开始后，当前选中的九宫格会显示在这里。
+                                    </div>
+                                  )}
+                                  {effectiveVisualReviewCollageUrl && (
+                                    <>
+                                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-gray-900/8 via-transparent to-transparent" />
+                                      <div className="pointer-events-none absolute bottom-3 left-3 rounded-full border border-white/80 bg-white/90 px-3 py-1.5 text-[11px] font-medium text-gray-700 shadow-[0_6px_18px_rgba(15,23,42,0.10)]">
+                                        悬停放大 · 点击查看
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              </button>
+
+                              {effectiveVisualReviewCollageUrl && (
+                                <div className="pointer-events-none absolute left-[calc(100%+18px)] top-0 z-30 hidden w-[320px] rounded-[26px] border border-gray-200/80 bg-white p-3 opacity-0 shadow-[0_20px_60px_rgba(15,23,42,0.12)] transition duration-200 xl:block xl:group-hover/preview:opacity-100">
+                                  <img
+                                    src={effectiveVisualReviewCollageUrl}
+                                    alt="九宫格放大预览"
+                                    className="aspect-square w-full rounded-[20px] object-cover"
+                                  />
+                                </div>
+                              )}
+
+                              {effectiveVisualReviewPreviewUrls.length > 1 && (
+                                <div className="mt-3 grid grid-cols-2 gap-2">
+                                  {effectiveVisualReviewPreviewUrls.map((previewUrl, previewIndex) => {
+                                    const isReviewedPreview = previewIndex < effectiveVisualReviewedCollageCount;
+                                    const previewLabel = isReviewedPreview
+                                      ? `九宫格 ${previewIndex + 1}`
+                                      : `九宫格 ${previewIndex + 1} · 保留预览`;
+                                    return (
+                                      <button
+                                        key={`${previewUrl}-${previewIndex}`}
+                                        type="button"
+                                        onClick={() => setVisualPreviewModal(previewUrl)}
+                                        className="overflow-hidden rounded-[18px] border border-gray-200/80 bg-white text-left shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:-translate-y-0.5 hover:border-gray-300"
+                                      >
+                                        <img
+                                          src={previewUrl}
+                                          alt={previewLabel}
+                                          className="aspect-square w-full object-cover"
+                                        />
+                                        <div className={`border-t px-3 py-2 text-[11px] font-medium ${
+                                          isReviewedPreview
+                                            ? 'border-gray-100 text-gray-500'
+                                            : 'border-amber-100 bg-amber-50/80 text-amber-700'
+                                        }`}>
+                                          {previewLabel}
+                                        </div>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-700">
+                                  {formatLiveReviewStep(effectiveSelectedVisualReview?.step)}
+                                </span>
+                                {showVisualCoverProgressSummary ? (
+                                  <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-700">
+                                    封面 {effectiveVisualCoverLoadedCount}/{effectiveVisualCoverRequestedCount}
+                                  </span>
+                                ) : typeof effectiveSelectedVisualReview?.coverCount === 'number' && (
+                                  <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-700">
+                                    封面 {effectiveSelectedVisualReview.coverCount}
+                                  </span>
+                                )}
+                                {typeof effectiveVisualCoverCurrentTotal === 'number' && effectiveVisualCoverCurrentTotal > 0 && typeof effectiveVisualCoverCurrentIndex === 'number' && (
+                                  <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-700">
+                                    进度 {effectiveVisualCoverCurrentIndex}/{effectiveVisualCoverCurrentTotal}
+                                  </span>
+                                )}
+                                {effectiveVisualCoverFailedCount > 0 && (
+                                  <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700">
+                                    失败 {effectiveVisualCoverFailedCount}
+                                  </span>
+                                )}
+                                {effectiveSelectedVisualReview?.decision && (
+                                  <span className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-medium ${
+                                    effectiveSelectedVisualReview.decision === 'Reject'
+                                      ? 'border-rose-200 bg-rose-50 text-rose-700'
+                                      : effectiveSelectedVisualReview.decision === 'Error'
+                                        ? 'border-amber-200 bg-amber-50 text-amber-700'
+                                        : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                  }`}>
+                                    {effectiveSelectedVisualReview.decision}
+                                  </span>
+                                )}
+                                {effectiveVisualReviewCollageCount > 0 && (
+                                  <span className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600">
+                                    九宫格 {effectiveVisualReviewCollageCount}{effectiveVisualReviewTargetCollageCount ? ` / ${effectiveVisualReviewTargetCollageCount}` : ''}
+                                  </span>
+                                )}
+                                {effectiveVisualReviewedCollageCount > 0 && effectiveVisualReviewedCollageCount !== effectiveVisualReviewCollageCount && (
+                                  <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700">
+                                    实际送审 {effectiveVisualReviewedCollageCount}
+                                  </span>
+                                )}
+                                {effectiveVisualUnusedCollageCount > 0 && (
+                                  <span className="inline-flex items-center rounded-full border border-amber-200 bg-white px-3 py-1.5 text-xs font-medium text-amber-700">
+                                    保留预览 {effectiveVisualUnusedCollageCount}
+                                  </span>
+                                )}
+                                {effectiveVisualCollageErrorCount > 0 && (
+                                  <span className="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-700">
+                                    拼图失败 {effectiveVisualCollageErrorCount}
+                                  </span>
+                                )}
+                                {effectiveVisualAppliedMode && (
+                                  <span className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600">
+                                    实际模式 {effectiveVisualAppliedMode === VISUAL_REVIEW_MODE_SIMPLE ? '简单' : '加强'}
+                                  </span>
+                                )}
+                                {effectiveVisualRequestedMode && (
+                                  <span className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-500">
+                                    请求 {effectiveVisualRequestedMode === VISUAL_REVIEW_MODE_SIMPLE ? '简单' : effectiveVisualRequestedMode === VISUAL_REVIEW_MODE_ENHANCED ? '加强' : '自动推荐'}
+                                  </span>
+                                )}
+                              </div>
+
+                              {showVisualCoverProgressSummary && (
+                                <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-500">
+                                  <span className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1">
+                                    封面加载 {effectiveVisualCoverCurrentIndex || effectiveVisualCoverRequestedCount}/{effectiveVisualCoverCurrentTotal || effectiveVisualCoverRequestedCount}
+                                  </span>
+                                  <span className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1">
+                                    成功 {effectiveVisualCoverLoadedCount} · 失败 {effectiveVisualCoverFailedCount}
+                                  </span>
+                                  {typeof effectiveSelectedVisualReview?.minRequiredCoverCount === 'number' && (
+                                    <span className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1">
+                                      至少 {effectiveSelectedVisualReview.minRequiredCoverCount} 张可继续
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+
+                              {(effectiveVisualDowngradeReason || effectiveVisualRecommendedMode || effectiveVisualUnusedCollageCount > 0) && (
+                                <div className="mt-3 space-y-2">
+                                  {effectiveVisualRecommendedMode && (
+                                    <div className="rounded-2xl border border-sky-200/70 bg-sky-50/80 px-4 py-3 text-sm leading-6 text-sky-800">
+                                      系统建议模式：{effectiveVisualRecommendedMode === VISUAL_REVIEW_MODE_SIMPLE ? '简单' : '加强'}
+                                    </div>
+                                  )}
+                                  {effectiveVisualUnusedCollageCount > 0 && (
+                                    <div className="rounded-2xl border border-amber-200/70 bg-amber-50/80 px-4 py-3 text-sm leading-6 text-amber-800">
+                                      当前共生成 {effectiveVisualReviewCollageCount} 张九宫格，其中 {effectiveVisualReviewedCollageCount} 张已送审，其余 {effectiveVisualUnusedCollageCount} 张仅保留给人工核对。
+                                    </div>
+                                  )}
+                                  {effectiveVisualDowngradeReason && (
+                                    <div className="rounded-2xl border border-amber-200/70 bg-amber-50/80 px-4 py-3 text-sm leading-6 text-amber-800">
+                                      {effectiveVisualDowngradeReason}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              <div className="mt-4 rounded-[22px] border border-gray-200/70 bg-[#FCFCFC] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.96)]">
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                  <div>
+                                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">Reasoning Log</p>
+                                    <p className="mt-1 text-sm font-medium text-gray-700">
+                                      {effectiveSelectedVisualReview?.username
+                                        ? (isViewingVisualReviewHistory
+                                          ? `当前查看 @${effectiveSelectedVisualReview.username}`
+                                          : `当前正在审阅 @${effectiveSelectedVisualReview.username}`)
+                                        : (visualLoading ? '视觉复核已启动，等待返回首个九宫格。' : '开始视觉复核后，这里会显示当前博主的推理日志。')}
+                                    </p>
+                                  </div>
+                                  <span className="inline-flex w-fit items-center rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-500">
+                                    {effectiveVisualReviewLogs.length} 条日志
+                                  </span>
+                                </div>
+
+                                <div className="mt-4 max-h-[220px] space-y-2 overflow-y-auto pr-1">
+                                  {effectiveVisualReviewLogs.length > 0 ? (
+                                    <AnimatePresence initial={false}>
+                                      {effectiveVisualReviewLogs.map((log) => (
+                                        <motion.div
+                                          key={log.id}
+                                          initial={{ opacity: 0, y: 8 }}
+                                          animate={{ opacity: 1, y: 0 }}
+                                          exit={{ opacity: 0, y: -8 }}
+                                          className={`rounded-2xl border px-4 py-3 text-sm leading-6 shadow-[0_1px_2px_rgba(15,23,42,0.03)] ${getLiveReviewToneClassName(log.tone)}`}
+                                        >
+                                          {log.text}
+                                        </motion.div>
+                                      ))}
+                                    </AnimatePresence>
+                                  ) : (
+                                    <div className="rounded-2xl border border-dashed border-gray-200/80 bg-white/90 px-4 py-8 text-center text-sm text-gray-500">
+                                      当前还没有可显示的日志。视觉复核启动后，会在这里逐句刷新。
+                                    </div>
+                                  )}
                                 </div>
                               </div>
-                              <div className="mt-4 grid gap-3">
-                                {group.actions.map((action) => (
-                                  <div
-                                    key={action.key}
-                                    className={`rounded-2xl border px-4 py-4 ${
-                                      action.enabled
-                                        ? 'border-gray-200/80 bg-gray-50/80'
-                                        : 'border-gray-200/70 bg-gray-50/40'
-                                    }`}
-                                  >
-                                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                                      <div className="min-w-0">
-                                        <p className="text-sm font-semibold text-gray-900">{action.label}</p>
-                                        <p className="mt-1 text-sm leading-6 text-gray-500">{action.hint}</p>
-                                      </div>
-                                      <button
-                                        type="button"
-                                        onClick={action.onClick}
-                                        disabled={!action.enabled}
-                                        className={`inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-[transform,box-shadow,border-color,background-color] duration-200 ${
-                                          action.enabled
-                                            ? 'cursor-pointer border border-gray-200 bg-white text-gray-700 hover:-translate-y-px hover:border-gray-300 hover:shadow-[0_12px_24px_rgba(15,23,42,0.07)]'
-                                            : 'cursor-not-allowed border border-gray-200 bg-white/70 text-gray-400'
-                                        }`}
-                                      >
-                                        {action.busy ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                                        导出
-                                      </button>
-                                    </div>
-                                  </div>
-                                ))}
+                            </div>
+                          </div>
+                        </motion.div>
+
+                        <motion.div
+                          initial={{ opacity: 0, y: 12 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="rounded-[24px] border border-gray-200/70 bg-white p-5 shadow-[0_1px_3px_rgba(15,23,42,0.04),0_18px_42px_rgba(15,23,42,0.05)]"
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">Review Queue</p>
+                              <h4 className="mt-2 text-lg font-semibold tracking-[-0.03em] text-gray-900">视觉复核状态</h4>
+                              <p className="mt-2 text-sm leading-6 text-gray-500">
+                                已完成列表支持点选跳转，实时对象单独保留一个入口，不会抢走你正在看的历史项。
+                              </p>
+                            </div>
+                            <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-700">
+                              {visualProgress.done} / {visualProgress.total || '—'}
+                            </span>
+                          </div>
+
+                          <div className="mt-5 h-2.5 overflow-hidden rounded-full bg-gray-100">
+                            <motion.div
+                              className="h-full bg-gray-900"
+                              initial={{ width: 0 }}
+                              animate={{ width: `${visualReviewProgressPercent}%` }}
+                            />
+                          </div>
+
+                          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                            <div className="rounded-2xl border border-gray-200/80 bg-[#FCFCFC] px-4 py-4">
+                              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400">Passed</p>
+                              <p className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-emerald-600">{visualPassedCount}</p>
+                            </div>
+                            <div className="rounded-2xl border border-gray-200/80 bg-[#FCFCFC] px-4 py-4">
+                              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400">Rejected</p>
+                              <p className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-rose-600">{visualRejectedCount}</p>
+                            </div>
+                            <div className="rounded-2xl border border-gray-200/80 bg-[#FCFCFC] px-4 py-4">
+                              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gray-400">Failed</p>
+                              <p className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-amber-600">{visualFailedCount}</p>
+                            </div>
+                          </div>
+
+                          <div className="mt-5">
+                            {hasRunningLiveReview && activeLiveReviewSnapshot && (
+                              <button
+                                type="button"
+                                onClick={handleReturnToLiveReview}
+                                className={`mb-3 flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${
+                                  visualReviewSelection.mode === 'live'
+                                    ? 'border-gray-900 bg-gray-900 text-white'
+                                    : 'border-gray-200/80 bg-[#FCFCFC] text-gray-700 hover:border-gray-300 hover:bg-white'
+                                }`}
+                              >
+                                <div>
+                                  <p className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${visualReviewSelection.mode === 'live' ? 'text-gray-200' : 'text-gray-400'}`}>
+                                    Live Review
+                                  </p>
+                                  <p className="mt-1 font-semibold">
+                                    @{activeLiveReviewSnapshot.username}
+                                  </p>
+                                </div>
+                                <span className={`rounded-full px-3 py-1 text-xs font-medium ${
+                                  visualReviewSelection.mode === 'live'
+                                    ? 'bg-white/12 text-white'
+                                    : 'border border-gray-200 bg-white text-gray-600'
+                                }`}>
+                                  {formatLiveReviewStep(activeLiveReviewSnapshot.step)}
+                                </span>
+                              </button>
+                            )}
+
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                              <h5 className="text-sm font-semibold text-gray-900">已完成复核</h5>
+                              <span className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-500">
+                                {visualReviewHistory.length} 条
+                              </span>
+                            </div>
+
+                            {visualReviewHistory.length > 0 ? (
+                              <ul className="max-h-[280px] space-y-3 overflow-y-auto pr-1">
+                                <AnimatePresence initial={false}>
+                                  {visualReviewHistory.map((item, index) => {
+                                      const isSuccess = item.success !== false && item.decision !== 'Reject';
+                                      const isSelected = visualReviewSelection.mode === 'history'
+                                        && effectiveSelectedVisualReview?.key === item.key;
+                                      const outcomeLabel = formatVisualReviewOutcomeLabel(item);
+                                      return (
+                                        <motion.li
+                                          key={`${item.key}-visual`}
+                                          initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                                          exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                                          className="list-none"
+                                        >
+                                          <button
+                                            type="button"
+                                            onClick={() => selectVisualReviewHistoryByIndex(index)}
+                                            className={`flex w-full items-start gap-3 rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${
+                                              isSelected
+                                                ? 'border-gray-900 bg-gray-900 text-white'
+                                                : 'border-gray-200/70 bg-[#FCFCFC] text-gray-700 hover:border-gray-300 hover:bg-white'
+                                            }`}
+                                          >
+                                            {isSuccess
+                                              ? <CheckCircle className={`h-5 w-5 shrink-0 ${isSelected ? 'text-emerald-300' : 'text-emerald-500'}`} />
+                                              : <XCircle className={`h-5 w-5 shrink-0 ${isSelected ? 'text-rose-300' : 'text-rose-500'}`} />}
+                                            <div className="min-w-0">
+                                              <div className="flex flex-wrap items-center gap-2">
+                                                <span className={`font-semibold ${isSelected ? 'text-white' : 'text-gray-900'}`}>{item.username}</span>
+                                                <span className={`font-medium ${
+                                                  isSelected
+                                                    ? 'text-gray-200'
+                                                    : (isSuccess ? 'text-emerald-600' : 'text-rose-600')
+                                                }`}>
+                                                  {outcomeLabel}
+                                                </span>
+                                              </div>
+                                              {formatVisualReviewSummary(item) && (
+                                                <p className={`mt-2 ${isSelected ? 'text-gray-200' : 'text-gray-600'}`}>
+                                                  {formatVisualReviewSummary(item)}
+                                                </p>
+                                              )}
+                                            </div>
+                                          </button>
+                                        </motion.li>
+                                      );
+                                    })}
+                                </AnimatePresence>
+                              </ul>
+                            ) : (
+                              <div className="rounded-2xl border border-dashed border-gray-200/80 bg-gray-50/70 px-4 py-10 text-center text-sm text-gray-500">
+                                视觉复核开始后，已完成的结果会实时出现在这里。
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      </div>
+                    ) : (
+                      <div className="rounded-[24px] border border-dashed border-gray-200/80 bg-gray-50/70 px-6 py-12 text-center text-sm text-gray-500">
+                        视觉复核 desk 会在启动任务或载入历史结果后显示在这里。
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeResultTab === 'export-handoff' && (
+                  <div className="mt-6 space-y-4">
+                    {exportActionGroups.map((group) => (
+                      <div key={group.key} className="rounded-[24px] border border-gray-200/80 bg-white px-4 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">{group.eyebrow}</p>
+                        <div className="mt-2 flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+                          <div>
+                            <h4 className="text-base font-semibold text-gray-900">{group.title}</h4>
+                            <p className="mt-1 text-sm leading-6 text-gray-500">{group.description}</p>
+                          </div>
+                        </div>
+                        <div className="mt-4 grid gap-3">
+                          {group.actions.map((action) => (
+                            <div
+                              key={action.key}
+                              className={`rounded-2xl border px-4 py-4 ${
+                                action.enabled
+                                  ? 'border-gray-200/80 bg-gray-50/80'
+                                  : 'border-gray-200/70 bg-gray-50/40'
+                              }`}
+                            >
+                              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                                <div className="min-w-0">
+                                  <p className="text-sm font-semibold text-gray-900">{action.label}</p>
+                                  <p className="mt-1 text-sm leading-6 text-gray-500">{action.hint}</p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={action.onClick}
+                                  disabled={!action.enabled}
+                                  className={`inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-[transform,box-shadow,border-color,background-color] duration-200 ${
+                                    action.enabled
+                                      ? 'cursor-pointer border border-gray-200 bg-white text-gray-700 hover:-translate-y-px hover:border-gray-300 hover:shadow-[0_12px_24px_rgba(15,23,42,0.07)]'
+                                      : 'cursor-not-allowed border border-gray-200 bg-white/70 text-gray-400'
+                                  }`}
+                                >
+                                  {action.busy ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                                  导出
+                                </button>
                               </div>
                             </div>
                           ))}
                         </div>
-
-                        <div className="rounded-[24px] border border-gray-200/80 bg-white px-4 py-4 shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">Next Action</p>
-                          <h4 className="mt-2 text-base font-semibold text-gray-900">当前最该做什么</h4>
-                          <p className="mt-2 text-sm leading-6 text-gray-500">
-                            这一区只保留一个操作建议，不会替代上面的导出按钮分组。
-                          </p>
-
-                          <div className="mt-4 space-y-3">
-                            <div className="rounded-2xl border border-gray-200/80 bg-gray-50/80 px-4 py-4">
-                              <p className="text-sm font-semibold text-gray-900">
-                                {visualReviewCompleted || hasFinalReviewExport
-                                  ? '最终复核表已进入可导出状态'
-                                  : hasVisualReviewCandidates
-                                    ? '已有账号通过初筛并可进入视觉复核'
-                                    : result.is_partial
-                                      ? '先观察增量结果，等待采集结束'
-                                      : '当前以导出核对为主'}
-                              </p>
-                              <p className="mt-2 text-sm leading-6 text-gray-500">
-                                {visualReviewCompleted || hasFinalReviewExport
-                                  ? (hasInMemoryFinalReviewData
-                                    ? '当前页面内已有完整初筛 + 视觉复核输入，下一步直接导出 final-review Excel。'
-                                    : '当前页面内存可能不完整，但后端已保存可复用 artifact，下一步仍可直接导出 final-review Excel。')
-                                  : hasVisualReviewCandidates
-                                    ? `当前有 ${visualReviewCandidates.length} 个候选账号可做视觉复核，建议先完成视觉复核，再导出最终复核表。`
-                                    : result.is_partial
-                                      ? '现在更适合先导出原始/测试/初筛结果做 spot check；待采集完成后再进入视觉复核。'
-                                      : '当前没有新的视觉复核动作需要推进，建议优先导出各类结果做交接或审计存档。'}
-                              </p>
-                            </div>
-
-                            {hasVisualReviewCandidates && (
-                              <button
-                                onClick={handleVisualReview}
-                                disabled={visualLoading}
-                                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-gray-950 px-5 py-3 text-sm font-semibold text-white shadow-[0_16px_36px_rgba(15,23,42,0.16)] transition-[transform,box-shadow,background-color] duration-200 hover:-translate-y-px hover:bg-gray-900 hover:shadow-[0_18px_34px_rgba(15,23,42,0.20)] disabled:cursor-not-allowed disabled:opacity-70"
-                              >
-                                {visualLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-                                {visualLoading
-                                  ? '视觉复核进行中...'
-                                  : `开始视觉复核（${visualReviewMode === VISUAL_REVIEW_MODE_SIMPLE ? '简单' : visualReviewMode === VISUAL_REVIEW_MODE_ENHANCED ? '加强' : '自动推荐'}）`}
-                              </button>
-                            )}
-                          </div>
-                        </div>
                       </div>
-                    </div>
+                    ))}
 
-                    <div className="space-y-4">
-                      <div className="rounded-[24px] border border-gray-200/70 bg-white p-5 shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">Run Snapshot</p>
-                        <div className="mt-4 space-y-3 text-sm text-gray-600">
-                          <div className="flex items-center justify-between gap-4">
-                            <span>返回平台</span>
-                            <span className="font-semibold text-gray-900">{activeResultPlatform}</span>
-                          </div>
-                          <div className="flex items-center justify-between gap-4">
-                            <span>结果状态</span>
-                            <span className="font-semibold text-gray-900">
-                              {scrapeRunning ? (result.is_partial ? '部分结果' : '显示上次结果') : (result.cached ? '缓存结果' : '实时结果')}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between gap-4">
-                            <span>博主卡片</span>
-                            <span className="font-semibold text-gray-900">{resultProfileReviews.length}</span>
-                          </div>
-                          <div className="flex items-center justify-between gap-4">
-                            <span>抓取记录</span>
-                            <span className="font-semibold text-gray-900">{rawRecordCount}</span>
-                          </div>
+                    <div className="rounded-[24px] border border-gray-200/70 bg-white p-5 shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400">Run Snapshot</p>
+                      <div className="mt-4 space-y-3 text-sm text-gray-600">
+                        <div className="flex items-center justify-between gap-4">
+                          <span>返回平台</span>
+                          <span className="font-semibold text-gray-900">{activeResultPlatform}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-4">
+                          <span>结果状态</span>
+                          <span className="font-semibold text-gray-900">
+                            {scrapeRunning ? (result.is_partial ? '部分结果' : '显示上次结果') : (result.cached ? '缓存结果' : '实时结果')}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-4">
+                          <span>博主卡片</span>
+                          <span className="font-semibold text-gray-900">{resultProfileReviews.length}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-4">
+                          <span>抓取记录</span>
+                          <span className="font-semibold text-gray-900">{rawRecordCount}</span>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-
-                <div className="mt-6 hidden peer-checked/result-profiles:block">
-                  {resultProfileReviews.length > 0 ? (
-                    renderProfileCards()
-                  ) : (
-                    <div className="rounded-[24px] border border-dashed border-gray-200/80 bg-gray-50/70 px-6 py-12 text-center text-sm text-gray-500">
-                      当前还没有可展示的博主卡片结果。
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
             </motion.div>
           )}

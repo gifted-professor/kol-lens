@@ -68,6 +68,21 @@
 - `final-review` 是否可继续导出，不再只看当前前端内存；后端保存的初筛/视觉复核 artifact 通过 `saved_final_review_artifacts_available` 暴露给前端。
 - `source_filename`、`identifier`、`profile_url`、上传表回填字段仍是导出对账时的主溯源锚点。
 
+## 四点一、Phase 04.1 主屏 ownership split
+
+Phase 04.1 之后，主屏的维护边界固定如下，后续 Phase 5 模块化必须按这个边界拆，而不是再按旧的纵向滚动顺序拆：
+
+- `运行工作台` 负责 intake / configuration、启动采集、任务进度，以及进入 post-run 区域的结果入口
+- `结果工作台` 负责所有 post-run surface，并且内部必须继续分区，不允许重新退化成一个长滚动页
+- `视觉复核` 负责 visual review mode、Visual Review Desk、实时对象、历史队列和复核 CTA
+- `导出交接` 负责所有 export actions，并在同一 tab 内承接 `Run Snapshot`
+
+额外约束：
+
+- `Run Snapshot` 是 `secondary audit context`，不是主 CTA，也不应该和概览的 Next Action 抢同一块区域
+- `RuleSpec Compiler` 属于 secondary tool，不再占据 operator 默认主流程
+- 维护者如果想新增 review/export 信息，必须先判断它属于 `视觉复核` 还是 `导出交接`，不能直接继续往概览里塞
+
 ## 五、平台级初筛规则摘要
 
 ### TikTok
