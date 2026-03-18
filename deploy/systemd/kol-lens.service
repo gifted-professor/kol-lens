@@ -1,0 +1,18 @@
+[Unit]
+Description=kol-lens gunicorn backend
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=kol
+Group=kol
+WorkingDirectory=/srv/kol-lens
+EnvironmentFile=/srv/kol-lens/.env.local
+ExecStart=/srv/kol-lens/backend/.venv/bin/gunicorn --config /srv/kol-lens/deploy/gunicorn.conf.py wsgi:app
+Restart=always
+RestartSec=3
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

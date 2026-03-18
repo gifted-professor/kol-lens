@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UploadCloud, Play, Square, Download, Image as ImageIcon, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Link as LinkIcon, RefreshCw, XCircle, CheckCircle, AlertCircle, Clock, Youtube, Instagram } from 'lucide-react';
 
-const API_BASE = `${window.location.protocol}//${window.location.hostname}:5001/api`;
+const API_BASE = '/api';
 const JOB_POLL_INTERVAL_MS = 800;
 const JOB_POLL_RETRY_DELAYS_MS = [1000, 2000, 4000];
 const VISUAL_REVIEW_MODE_SIMPLE = 'simple';
@@ -165,8 +165,7 @@ function formatVisualReviewOutcomeLabel(review) {
 function resolveBackendAssetUrl(path) {
   if (!path) return '';
   if (/^(https?:)?\/\//i.test(path) || path.startsWith('data:')) return path;
-  const backendOrigin = `${window.location.protocol}//${window.location.hostname}:5001`;
-  return path.startsWith('/') ? `${backendOrigin}${path}` : `${backendOrigin}/${path}`;
+  return path.startsWith('/') ? path : `/${path}`;
 }
 
 function formatLiveReviewStep(step) {
