@@ -453,8 +453,8 @@ def main():
         assert preserved_failure_result["failed_batches"][0]["error"] == "network fail", preserved_failure_result
         assert "已保留最近一次可用结果" in preserved_failure_result["message"], preserved_failure_result
 
-        instagram_profile_reviews_path = Path(backend_app.get_platform_dir("instagram")) / "instagram_profile_reviews.json"
         instagram_raw_path = Path(backend_app.get_platform_dir("instagram")) / "instagram_data.json"
+        instagram_raw_snapshot_path = Path(backend_app.get_last_non_empty_raw_snapshot_path("instagram"))
 
         cached_subset_reviews = [
             {
@@ -517,7 +517,7 @@ def main():
                 },
             ],
         )
-        write_json(instagram_profile_reviews_path, cached_subset_reviews)
+        backend_app.save_profile_reviews("instagram", cached_subset_reviews)
 
         cached_subset_result = backend_app.build_cached_scrape_response(
             "instagram",
@@ -535,7 +535,7 @@ def main():
             "cachedalpha",
         ], cached_subset_result
 
-        write_json(instagram_profile_reviews_path, cached_subset_reviews[:2])
+        backend_app.save_profile_reviews("instagram", cached_subset_reviews[:2])
         backend_app.save_upload_metadata(
             "instagram",
             {
@@ -606,7 +606,17 @@ def main():
                 },
             }
         ]
-        write_json(instagram_profile_reviews_path, stale_instagram_reviews)
+        backend_app.save_profile_reviews(
+            "instagram",
+            stale_instagram_reviews,
+            metadata={
+                "cached": True,
+                "stale_result": True,
+                "used_fallback": True,
+                "raw_data_source": "last_non_empty_snapshot",
+                "source_path": str(instagram_raw_snapshot_path),
+            },
+        )
 
         canonical_instagram_reviews = backend_app.load_profile_reviews("instagram")
         assert canonical_instagram_reviews[0]["upload_metadata"]["region"] == "US", canonical_instagram_reviews
@@ -689,8 +699,9 @@ def main():
         assert final_review_row["profile_url"] == "https://www.instagram.com/creatorgamma", final_review_row
         assert final_review_row["source_filename"] == "runtime_validation_upload.xlsx", final_review_row
         assert {"identifier", "profile_url", "source_filename", "status", "reason", "account_id"}.issubset(final_review_headers), final_review_headers
+        assert "stale_result" in final_review_headers, final_review_headers
+        assert "raw_data_source" in final_review_headers, final_review_headers
 
-        instagram_raw_snapshot_path = Path(backend_app.get_last_non_empty_raw_snapshot_path("instagram"))
         raw_route_items = [
             {
                 "username": "creatorgamma",
@@ -721,18 +732,18 @@ def main():
         assert "profile_url" not in raw_excel_headers, raw_excel_headers
         assert "source_filename" not in raw_excel_headers, raw_excel_headers
 
-        # Raw routes should not fall back to audit/test export semantics when the current raw file is empty.
+        # Raw routes remain raw but now fall back to the last non-empty snapshot when current raw data is empty.
         write_json(instagram_raw_path, [])
         write_json(instagram_raw_snapshot_path, raw_route_items)
 
         raw_json_empty_response = client.get("/api/download/instagram/json")
         assert raw_json_empty_response.status_code == 200, raw_json_empty_response.get_data(as_text=True)
-        assert json.loads(raw_json_empty_response.get_data(as_text=True)) == [], raw_json_empty_response.get_data(as_text=True)
+        assert json.loads(raw_json_empty_response.get_data(as_text=True)) == raw_route_items, raw_json_empty_response.get_data(as_text=True)
 
         raw_excel_empty_response = client.get("/api/download/instagram/excel")
         assert raw_excel_empty_response.status_code == 200
         raw_excel_empty_headers = workbook_sheet_headers(raw_excel_empty_response.data)
-        assert raw_excel_empty_headers == [None], raw_excel_empty_headers
+        assert {"username", "url", "biography", "latestPosts"}.issubset(raw_excel_empty_headers), raw_excel_empty_headers
 
         # test-info-json remains the structured debug/test JSON export, distinct from the raw json route above.
         test_info_response = client.get("/api/download/instagram/test-info")
@@ -760,22 +771,91 @@ def main():
         assert profile_payload["raw_data_source"] == "last_non_empty_snapshot", profile_payload
         assert profile_payload["status"] == "Pass", profile_payload
 
+        saved_visual_artifact = backend_app.save_visual_review_artifacts(
+            "instagram",
+            {
+                "visual_results": {
+                    "creatorgamma": {
+                        "username": "creatorgamma",
+                        "decision": "Pass",
+                        "reason": "saved visual pass",
+                        "signals": ["clean"],
+                        "success": True,
+                    }
+                },
+                "review_history": [{"current_username": "creatorgamma", "step": "completed"}],
+                "live_review": {"current_username": "creatorgamma", "step": "completed"},
+            },
+            metadata=backend_app.load_profile_review_artifact_metadata("instagram"),
+        )
+        assert saved_visual_artifact["visual_results_path"].endswith("instagram_visual_results.json"), saved_visual_artifact
+        assert saved_visual_artifact["review_history_path"].endswith("instagram_visual_review_history.json"), saved_visual_artifact
+
+        artifact_status_response = client.get("/api/artifacts/instagram/status")
+        artifact_status_payload = artifact_status_response.get_json()
+        assert artifact_status_response.status_code == 200, artifact_status_payload
+        assert artifact_status_payload["saved_final_review_artifacts_available"] is True, artifact_status_payload
+        assert artifact_status_payload["saved_final_review_artifacts_updated_at"], artifact_status_payload
+
+        final_review_missing_payload = client.post("/api/download/instagram/final-review", json={})
+        assert final_review_missing_payload.status_code == 200, final_review_missing_payload.get_data(as_text=True)
+        final_review_missing_row = workbook_sheet_row_dict(final_review_missing_payload.data)
+        assert final_review_missing_row["raw_data_source"] == "last_non_empty_snapshot", final_review_missing_row
+        assert final_review_missing_row["stale_result"] is True, final_review_missing_row
+        assert final_review_missing_row["visual_status"] == "Pass", final_review_missing_row
+
+        final_review_empty_payload = client.post(
+            "/api/download/instagram/final-review",
+            json={"profile_reviews": [], "visual_results": {}},
+        )
+        assert final_review_empty_payload.status_code == 200, final_review_empty_payload.get_data(as_text=True)
+        final_review_empty_row = workbook_sheet_row_dict(final_review_empty_payload.data)
+        assert final_review_empty_row["raw_data_source"] == "last_non_empty_snapshot", final_review_empty_row
+        assert final_review_empty_row["stale_result"] is True, final_review_empty_row
+
+        final_review_incomplete_payload = client.post(
+            "/api/download/instagram/final-review",
+            json={
+                "profile_reviews": [
+                    {
+                        "platform": "instagram",
+                        "username": "creatorgamma",
+                        "profile_url": "",
+                        "status": "Pass",
+                        "reason": "",
+                        "covers": [],
+                    }
+                ],
+                "visual_results": {},
+            },
+        )
+        assert final_review_incomplete_payload.status_code == 200, final_review_incomplete_payload.get_data(as_text=True)
+        final_review_incomplete_row = workbook_sheet_row_dict(final_review_incomplete_payload.data)
+        assert final_review_incomplete_row["visual_status"] == "Pass", final_review_incomplete_row
+        assert final_review_incomplete_row["reason"] == "saved visual pass", final_review_incomplete_row
+
         prescreen_review_response = client.get("/api/download/instagram/prescreen-review")
         assert prescreen_review_response.status_code == 200, prescreen_review_response.get_data(as_text=True)
         prescreen_headers = workbook_sheet_headers(prescreen_review_response.data)
         prescreen_row = workbook_sheet_row_dict(prescreen_review_response.data)
         assert {"identifier", "profile_url", "source_filename", "status", "reason"}.issubset(prescreen_headers), prescreen_headers
+        assert {"stale_result", "raw_data_source"}.issubset(prescreen_headers), prescreen_headers
         assert prescreen_row["identifier"] == "creatorgamma", prescreen_row
         assert prescreen_row["source_filename"] == "runtime_validation_upload.xlsx", prescreen_row
+        assert prescreen_row["stale_result"] is True, prescreen_row
+        assert prescreen_row["raw_data_source"] == "last_non_empty_snapshot", prescreen_row
 
         image_review_response = client.get("/api/download/instagram/image-review")
         assert image_review_response.status_code == 200, image_review_response.get_data(as_text=True)
         image_review_headers = workbook_sheet_headers(image_review_response.data)
         image_review_row = workbook_sheet_row_dict(image_review_response.data)
         assert {"identifier", "profile_url", "source_filename", "status", "reason", "stage_status", "stage_reason"}.issubset(image_review_headers), image_review_headers
+        assert {"stale_result", "raw_data_source"}.issubset(image_review_headers), image_review_headers
         assert image_review_row["identifier"] == "creatorgamma", image_review_row
         assert image_review_row["source_filename"] == "runtime_validation_upload.xlsx", image_review_row
         assert image_review_row["profile_url"] == "https://www.instagram.com/creatorgamma", image_review_row
+        assert image_review_row["stale_result"] is True, image_review_row
+        assert image_review_row["raw_data_source"] == "last_non_empty_snapshot", image_review_row
 
         downgraded_assets = backend_app.select_visual_review_bundle_assets(
             {
