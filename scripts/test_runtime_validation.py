@@ -632,6 +632,27 @@ def main():
             stale_instagram_reviews,
             instagram_metadata,
         )
+        raw_rows_without_raw_items = backend_app.build_test_info_raw_rows(
+            "instagram",
+            [],
+            stale_instagram_reviews,
+            instagram_metadata,
+            raw_export_meta={"source": "unavailable"},
+        )
+        raw_rows_with_reserved_fields = backend_app.build_test_info_raw_rows(
+            "instagram",
+            [
+                {
+                    "username": "creatorgamma",
+                    "url": "https://www.instagram.com/creatorgamma",
+                    "status": "raw-status",
+                    "reason": "raw-reason",
+                    "source_filename": "raw-source.xlsx",
+                }
+            ],
+            stale_instagram_reviews,
+            instagram_metadata,
+        )
         json_payload = backend_app.build_test_info_json_payload(
             "instagram",
             stale_instagram_reviews,
@@ -651,12 +672,30 @@ def main():
             },
         )
 
-        for row in (prescreen_rows[0], image_rows[0], summary_rows[0], raw_rows[0], final_rows[0]):
+        for row in (
+            prescreen_rows[0],
+            image_rows[0],
+            summary_rows[0],
+            raw_rows[0],
+            raw_rows_without_raw_items[0],
+            final_rows[0],
+        ):
             assert row["upload_region"] == "US", row
             assert row["upload_language"] == "en", row
             assert row["upload_handle"] == "creatorgamma", row
 
         assert final_rows[0]["profile_url"] == "https://www.instagram.com/creatorgamma", final_rows[0]
+        assert raw_rows_without_raw_items[0]["identifier"] == "creatorgamma", raw_rows_without_raw_items[0]
+        assert raw_rows_without_raw_items[0]["profile_url"] == "https://www.instagram.com/creatorgamma", raw_rows_without_raw_items[0]
+        assert raw_rows_without_raw_items[0]["source_filename"] == "runtime_validation_upload.xlsx", raw_rows_without_raw_items[0]
+        assert raw_rows_without_raw_items[0]["review_status"] == "approval", raw_rows_without_raw_items[0]
+        assert raw_rows_without_raw_items[0]["review_stage_status"] == "passed_prescreen", raw_rows_without_raw_items[0]
+        assert raw_rows_with_reserved_fields[0]["status"] == "approval", raw_rows_with_reserved_fields[0]
+        assert raw_rows_with_reserved_fields[0]["reason"] == stale_instagram_reviews[0]["reason"], raw_rows_with_reserved_fields[0]
+        assert raw_rows_with_reserved_fields[0]["source_filename"] == "runtime_validation_upload.xlsx", raw_rows_with_reserved_fields[0]
+        assert raw_rows_with_reserved_fields[0]["raw_status"] == "raw-status", raw_rows_with_reserved_fields[0]
+        assert raw_rows_with_reserved_fields[0]["raw_reason"] == "raw-reason", raw_rows_with_reserved_fields[0]
+        assert raw_rows_with_reserved_fields[0]["raw_source_filename"] == "raw-source.xlsx", raw_rows_with_reserved_fields[0]
         payload_profile = next(item for item in json_payload["profiles"] if item["identifier"] == "creatorgamma")
         assert payload_profile["upload_metadata"]["region"] == "US", payload_profile
         assert payload_profile["review"]["upload_metadata"]["region"] == "US", payload_profile
@@ -757,9 +796,54 @@ def main():
         assert test_info_account_row["identifier"] == "creatorgamma", test_info_account_row
         assert test_info_account_row["profile_url"] == "https://www.instagram.com/creatorgamma", test_info_account_row
         assert test_info_account_row["source_filename"] == "runtime_validation_upload.xlsx", test_info_account_row
+        assert test_info_account_row["status"] == "approval", test_info_account_row
         assert test_info_raw_row["identifier"] == "creatorgamma", test_info_raw_row
         assert test_info_raw_row["raw_data_source"] == "last_non_empty_snapshot", test_info_raw_row
         assert test_info_raw_row["source_filename"] == "runtime_validation_upload.xlsx", test_info_raw_row
+        assert test_info_raw_row["review_status"] == "approval", test_info_raw_row
+        assert test_info_raw_row["biography"] == "raw route payload", test_info_raw_row
+
+        write_json(instagram_raw_path, [])
+        write_json(instagram_raw_snapshot_path, [])
+
+        test_info_no_raw_response = client.get("/api/download/instagram/test-info")
+        assert test_info_no_raw_response.status_code == 200, test_info_no_raw_response.get_data(as_text=True)
+        test_info_no_raw_headers = workbook_sheet_headers(test_info_no_raw_response.data, "Raw Apify Data")
+        test_info_no_raw_row = workbook_sheet_row_dict(test_info_no_raw_response.data, "Raw Apify Data")
+        assert {"identifier", "profile_url", "source_filename", "upload_handle", "upload_region"}.issubset(test_info_no_raw_headers), test_info_no_raw_headers
+        assert test_info_no_raw_row["identifier"] == "creatorgamma", test_info_no_raw_row
+        assert test_info_no_raw_row["profile_url"] == "https://www.instagram.com/creatorgamma", test_info_no_raw_row
+        assert test_info_no_raw_row["source_filename"] == "runtime_validation_upload.xlsx", test_info_no_raw_row
+        assert test_info_no_raw_row["upload_handle"] == "creatorgamma", test_info_no_raw_row
+        assert test_info_no_raw_row["review_status"] == "approval", test_info_no_raw_row
+
+        write_json(
+            instagram_raw_path,
+            [
+                {
+                    "username": "creatorgamma",
+                    "url": "https://www.instagram.com/creatorgamma",
+                    "status": "raw-status",
+                    "reason": "raw-reason",
+                    "source_filename": "raw-source.xlsx",
+                }
+            ],
+        )
+        write_json(instagram_raw_snapshot_path, raw_route_items)
+
+        test_info_reserved_raw_response = client.get("/api/download/instagram/test-info")
+        assert test_info_reserved_raw_response.status_code == 200, test_info_reserved_raw_response.get_data(as_text=True)
+        test_info_reserved_raw_headers = workbook_sheet_headers(test_info_reserved_raw_response.data, "Raw Apify Data")
+        test_info_reserved_raw_row = workbook_sheet_row_dict(test_info_reserved_raw_response.data, "Raw Apify Data")
+        assert {"raw_status", "raw_reason", "raw_source_filename"}.issubset(test_info_reserved_raw_headers), test_info_reserved_raw_headers
+        assert test_info_reserved_raw_row["review_status"] == "approval", test_info_reserved_raw_row
+        assert test_info_reserved_raw_row["reason"] == "", test_info_reserved_raw_row
+        assert test_info_reserved_raw_row["raw_status"] == "raw-status", test_info_reserved_raw_row
+        assert test_info_reserved_raw_row["raw_reason"] == "raw-reason", test_info_reserved_raw_row
+        assert test_info_reserved_raw_row["raw_source_filename"] == "raw-source.xlsx", test_info_reserved_raw_row
+
+        write_json(instagram_raw_path, [])
+        write_json(instagram_raw_snapshot_path, raw_route_items)
 
         test_info_json_response = client.get("/api/download/instagram/test-info-json")
         assert test_info_json_response.status_code == 200, test_info_json_response.get_data(as_text=True)
@@ -802,7 +886,10 @@ def main():
         final_review_missing_row = workbook_sheet_row_dict(final_review_missing_payload.data)
         assert final_review_missing_row["raw_data_source"] == "last_non_empty_snapshot", final_review_missing_row
         assert final_review_missing_row["stale_result"] is True, final_review_missing_row
-        assert final_review_missing_row["visual_status"] == "Pass", final_review_missing_row
+        assert final_review_missing_row["prescreen_status"] == "approval", final_review_missing_row
+        assert final_review_missing_row["visual_status"] == "approval", final_review_missing_row
+        assert final_review_missing_row["status"] == "approval", final_review_missing_row
+        assert final_review_missing_row["final_status"] == "approval", final_review_missing_row
 
         final_review_empty_payload = client.post(
             "/api/download/instagram/final-review",
@@ -831,7 +918,10 @@ def main():
         )
         assert final_review_incomplete_payload.status_code == 200, final_review_incomplete_payload.get_data(as_text=True)
         final_review_incomplete_row = workbook_sheet_row_dict(final_review_incomplete_payload.data)
-        assert final_review_incomplete_row["visual_status"] == "Pass", final_review_incomplete_row
+        assert final_review_incomplete_row["prescreen_status"] == "approval", final_review_incomplete_row
+        assert final_review_incomplete_row["visual_status"] == "approval", final_review_incomplete_row
+        assert final_review_incomplete_row["status"] == "approval", final_review_incomplete_row
+        assert final_review_incomplete_row["final_status"] == "approval", final_review_incomplete_row
         assert final_review_incomplete_row["reason"] == "saved visual pass", final_review_incomplete_row
 
         prescreen_review_response = client.get("/api/download/instagram/prescreen-review")
@@ -842,6 +932,7 @@ def main():
         assert {"stale_result", "raw_data_source"}.issubset(prescreen_headers), prescreen_headers
         assert prescreen_row["identifier"] == "creatorgamma", prescreen_row
         assert prescreen_row["source_filename"] == "runtime_validation_upload.xlsx", prescreen_row
+        assert prescreen_row["status"] == "approval", prescreen_row
         assert prescreen_row["stale_result"] is True, prescreen_row
         assert prescreen_row["raw_data_source"] == "last_non_empty_snapshot", prescreen_row
 
@@ -854,8 +945,13 @@ def main():
         assert image_review_row["identifier"] == "creatorgamma", image_review_row
         assert image_review_row["source_filename"] == "runtime_validation_upload.xlsx", image_review_row
         assert image_review_row["profile_url"] == "https://www.instagram.com/creatorgamma", image_review_row
+        assert image_review_row["status"] == "approval", image_review_row
         assert image_review_row["stale_result"] is True, image_review_row
         assert image_review_row["raw_data_source"] == "last_non_empty_snapshot", image_review_row
+
+        assert backend_app.format_export_review_status("Pass") == "approval"
+        assert backend_app.format_export_review_status("Reject") == "pass"
+        assert backend_app.format_export_review_status("Missing") == "Missing"
 
         downgraded_assets = backend_app.select_visual_review_bundle_assets(
             {

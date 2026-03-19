@@ -3182,6 +3182,28 @@ def get_review_stage_label(status, reason):
         return 'rejected_prescreen'
     return status or 'unknown'
 
+
+def format_export_review_status(status):
+    text = str(status or '').strip()
+    return {
+        'Pass': 'approval',
+        'Reject': 'pass',
+    }.get(text, text)
+
+
+def append_raw_item_to_export_row(row, raw_item):
+    sanitized_item = sanitize_json_compatible(raw_item)
+    if not isinstance(sanitized_item, dict):
+        row['raw_value'] = sanitized_item
+        return row
+
+    for key, value in sanitized_item.items():
+        target_key = str(key)
+        if target_key in row:
+            target_key = f'raw_{target_key}'
+        row[target_key] = value
+    return row
+
 def format_soft_flags_for_export(soft_flags):
     if not isinstance(soft_flags, list):
         return ''
@@ -3324,7 +3346,7 @@ def build_image_review_rows(platform, profile_reviews, artifact_metadata=None):
         review_item = context["review_item"]
         append_runtime_stats_to_export_row(row, review_item)
         row.update({
-            'status': review_item.get('status'),
+            'status': format_export_review_status(review_item.get('status')),
             'reason': review_item.get('reason'),
             'stage_status': get_review_stage_label(review_item.get('status'), review_item.get('reason')),
             'stage_reason': review_item.get('reason'),
@@ -3354,7 +3376,7 @@ def build_prescreen_review_rows(platform, profile_reviews, artifact_metadata=Non
         review_item = context["review_item"]
         append_runtime_stats_to_export_row(row, review_item)
         row.update({
-            'status': review_item.get('status'),
+            'status': format_export_review_status(review_item.get('status')),
             'stage_status': get_review_stage_label(review_item.get('status'), review_item.get('reason')),
             'reason': review_item.get('reason'),
             'latest_post_time': review_item.get('latest_post_time'),
@@ -3437,14 +3459,14 @@ def build_final_review_rows(platform, profile_reviews, visual_results, artifact_
         )
         append_runtime_stats_to_export_row(row, review_item)
         row.update({
-            'prescreen_status': prescreen_status,
+            'prescreen_status': format_export_review_status(prescreen_status),
             'prescreen_reason': prescreen_reason,
-            'visual_status': visual_status,
+            'visual_status': format_export_review_status(visual_status),
             'visual_reason': visual_reason,
             'visual_signals': visual_signals,
-            'status': final_status,
+            'status': format_export_review_status(final_status),
             'reason': final_reason,
-            'final_status': final_status,
+            'final_status': format_export_review_status(final_status),
             'final_reason': final_reason,
         })
         row.update(export_fields)
@@ -3762,7 +3784,7 @@ def build_test_info_summary_rows(platform, profile_reviews, raw_items, metadata_
         )
         canonical_review_item = context["review_item"]
         row.update({
-            'status': canonical_review_item.get('status', ''),
+            'status': format_export_review_status(canonical_review_item.get('status', '')),
             'stage_status': (
                 get_review_stage_label(canonical_review_item.get('status'), canonical_review_item.get('reason'))
                 if canonical_review_item else 'raw_only'
@@ -3781,7 +3803,7 @@ def build_test_info_summary_rows(platform, profile_reviews, raw_items, metadata_
 
 def build_test_info_raw_rows(platform, raw_items, profile_reviews, metadata_lookup, raw_export_meta=None):
     merged_reviews = merge_upload_metadata_into_reviews(platform, profile_reviews)
-    review_lookup, _ = build_profile_review_lookup(platform, merged_reviews)
+    review_lookup, ordered_identifiers = build_profile_review_lookup(platform, merged_reviews)
     rows = []
     raw_export_meta = raw_export_meta or {}
     raw_data_source = str(raw_export_meta.get("source") or "current").strip() or "current"
@@ -3793,30 +3815,81 @@ def build_test_info_raw_rows(platform, raw_items, profile_reviews, metadata_look
     elif raw_data_source == "unavailable":
         raw_data_note = "当前原始抓取为空，且无最近一次非空快照可回退"
 
+    raw_items_by_identifier = {}
+    for raw_item in raw_items or []:
+        identifier = get_raw_item_identifier(platform, raw_item)
+        if not identifier:
+            continue
+        if identifier not in raw_items_by_identifier:
+            raw_items_by_identifier[identifier] = []
+            if identifier not in review_lookup:
+                ordered_identifiers.append(identifier)
+        raw_items_by_identifier[identifier].append(raw_item)
+
+    if isinstance(metadata_lookup, dict):
+        for identifier in metadata_lookup.keys():
+            if identifier not in review_lookup and identifier not in raw_items_by_identifier:
+                ordered_identifiers.append(identifier)
+
     if not raw_items:
-        rows.append({
-            'test_row_index': 1,
-            'platform': platform,
-            'identifier': '',
-            'username': '',
-            'profile_url': '',
-            'source_filename': '',
-            'matched_identifier': '',
-            'matched_username': '',
-            'matched_profile_url': '',
-            'status': '',
-            'review_status': '',
-            'review_stage_status': 'raw_unavailable',
-            'reason': '',
-            'review_reason': '',
-            'review_latest_post_time': '',
-            'review_soft_flags': '',
-            'review_cover_count': '',
-            'raw_data_source': raw_data_source,
-            'raw_data_source_path': raw_data_source_path,
-            'raw_data_source_updated_at': raw_data_source_updated_at,
-            'raw_data_note': raw_data_note,
-        })
+        if not ordered_identifiers:
+            rows.append({
+                'test_row_index': 1,
+                'platform': platform,
+                'identifier': '',
+                'username': '',
+                'profile_url': '',
+                'source_filename': '',
+                'matched_identifier': '',
+                'matched_username': '',
+                'matched_profile_url': '',
+                'status': '',
+                'review_status': '',
+                'review_stage_status': 'raw_unavailable',
+                'reason': '',
+                'review_reason': '',
+                'review_latest_post_time': '',
+                'review_soft_flags': '',
+                'review_cover_count': '',
+                'raw_data_source': raw_data_source,
+                'raw_data_source_path': raw_data_source_path,
+                'raw_data_source_updated_at': raw_data_source_updated_at,
+                'raw_data_note': raw_data_note,
+            })
+            return rows
+
+        for index, identifier in enumerate(ordered_identifiers, start=1):
+            review_item = review_lookup.get(identifier) or {}
+            row, context = build_audit_export_row_base(
+                platform,
+                review_item=review_item,
+                metadata_lookup=metadata_lookup,
+                preferred_identifier=identifier,
+                raw_item={},
+            )
+            canonical_review_item = context["review_item"]
+            row.update({
+                'test_row_index': index,
+                'matched_identifier': '',
+                'matched_username': '',
+                'matched_profile_url': '',
+                'status': format_export_review_status(canonical_review_item.get('status', '')),
+                'review_status': format_export_review_status(canonical_review_item.get('status', '')),
+                'review_stage_status': (
+                    get_review_stage_label(canonical_review_item.get('status'), canonical_review_item.get('reason'))
+                    if canonical_review_item else 'raw_unavailable'
+                ),
+                'reason': canonical_review_item.get('reason', ''),
+                'review_reason': canonical_review_item.get('reason', ''),
+                'review_latest_post_time': canonical_review_item.get('latest_post_time', ''),
+                'review_soft_flags': format_soft_flags_for_export(canonical_review_item.get('soft_flags')),
+                'review_cover_count': len(canonical_review_item.get('covers') or []),
+                'raw_data_source': raw_data_source,
+                'raw_data_source_path': raw_data_source_path,
+                'raw_data_source_updated_at': raw_data_source_updated_at,
+                'raw_data_note': raw_data_note,
+            })
+            rows.append(row)
         return rows
 
     for index, raw_item in enumerate(raw_items or [], start=1):
@@ -3835,8 +3908,8 @@ def build_test_info_raw_rows(platform, raw_items, profile_reviews, metadata_look
             'matched_identifier': identifier,
             'matched_username': get_raw_item_username(platform, raw_item),
             'matched_profile_url': get_raw_item_profile_url(platform, raw_item),
-            'status': canonical_review_item.get('status', ''),
-            'review_status': canonical_review_item.get('status', ''),
+            'status': format_export_review_status(canonical_review_item.get('status', '')),
+            'review_status': format_export_review_status(canonical_review_item.get('status', '')),
             'review_stage_status': (
                 get_review_stage_label(canonical_review_item.get('status'), canonical_review_item.get('reason'))
                 if canonical_review_item else 'raw_only'
@@ -3851,12 +3924,7 @@ def build_test_info_raw_rows(platform, raw_items, profile_reviews, metadata_look
             'raw_data_source_updated_at': raw_data_source_updated_at,
             'raw_data_note': raw_data_note,
         })
-
-        sanitized_item = sanitize_json_compatible(raw_item)
-        if isinstance(sanitized_item, dict):
-            row.update(sanitized_item)
-        else:
-            row['raw_value'] = sanitized_item
+        append_raw_item_to_export_row(row, raw_item)
 
         rows.append(row)
 
